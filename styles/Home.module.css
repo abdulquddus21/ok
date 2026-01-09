@@ -1,3 +1,7 @@
+body{
+  background-color: #050b14; /* Juda to'q ko'k (deyarli qora) */
+}
+
 .container {
   min-height: 100vh;
   padding: 0 0.5rem;
