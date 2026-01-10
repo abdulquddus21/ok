@@ -1,5 +1,7 @@
 /* styles/Chat.module.css */
-
+body{
+  background-color: #17212b;
+}
 /* ASOSIY LAYOUT */
 .telegramLayout {
     display: flex;
@@ -23,10 +25,16 @@
   @media (min-width: 768px) {
     .sidebar { width: 350px; flex-shrink: 0; }
   }
+  @media (max-width: 768px){
+    .searchBox{
+    margin-top: 0px;
+
+    }
+  }
   
   .header { padding: 10px; background-color: #17212b; }
   .searchBox { background-color: #242f3d; border-radius: 22px; padding: 8px 15px; display: flex; align-items: center; gap: 10px;margin-top: 60px;}
-  .searchBox input { background: transparent; border: none; color: #fff; width: 100%; outline: none; }
+  .searchBox input { background: transparent; border: none; color: #fff; width: 100%; outline: none;  }
   .chatList { flex: 1; overflow-y: auto; padding-bottom: 80px; }
   
   .chatItem { display: flex; align-items: center; padding: 12px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #0e1621; }
@@ -60,7 +68,7 @@
   .myMsg { justify-content: flex-end; }
   .otherMsg { justify-content: flex-start; }
   
-  .messageBubble { max-width: 75%; padding: 8px 12px; border-radius: 12px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.3); word-wrap: break-word; }
+  .messageBubble { max-width: 300px; padding: 8px 12px; border-radius: 12px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.3); word-wrap: break-word; }
   .myMsg .messageBubble { background-color: #2b5278; color: #fff; border-bottom-right-radius: 0; }
   .otherMsg .messageBubble { background-color: #182533; color: #fff; border-bottom-left-radius: 0; }
   
@@ -88,7 +96,7 @@
   .bubble { background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; color: #fff; }
   
   /* MODAL */
-  .modalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+  .modalOverlay { position: static; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 2000; }
   .modal { background: #17212b; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; }
   .closeBtn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #8899aa; cursor: pointer; }
   .typeSelector { display: flex; gap: 10px; margin: 15px 0; }

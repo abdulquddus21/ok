@@ -328,7 +328,7 @@ export default function ChatRoom() {
         }
 
         .message-bubble {
-          max-width: 75%;
+          max-width: 300px;
           padding: 8px 12px;
           border-radius: 12px;
           position: relative;
