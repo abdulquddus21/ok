@@ -1,39 +1,38 @@
-// pages/profile/[username].js
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+import { FaSignOutAlt, FaCalendarAlt, FaGamepad, FaTrophy, FaMedal, FaStar } from 'react-icons/fa'
 import { supabase } from '../../lib/supabaseClient'
-import styles from '../../styles/Home.module.css' // Style ni import qilish
+import styles from '../../styles/Home.module.css'
+import Navbar from '../../components/Navbar'
 
 export default function Profile() {
   const router = useRouter();
-  const { username } = router.query; // URL dan username ni olish
+  const { username } = router.query;
   
-  const [currentUser, setCurrentUser] = useState(null); // Tizimga kirgan odam
-  const [profileData, setProfileData] = useState(null); // Profil egasi ma'lumotlari
+  const [currentUser, setCurrentUser] = useState(null);
+  const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Tizimga kirgan userni tekshirish
     const storedUser = localStorage.getItem('mlbb_user');
     if (!storedUser) {
-      router.push('/'); // Login qilmagan bo'lsa bosh sahifaga otish
+      router.push('/');
       return;
     }
     const user = JSON.parse(storedUser);
     setCurrentUser(user);
 
-    // 2. Agar URL da username bo'lsa, bazadan ma'lumot olish
     if (username) {
       fetchProfile(username);
     }
-  }, [username]); // username o'zgarganda qayta ishlaydi
+  }, [username]);
 
   const fetchProfile = async (targetUsername) => {
     setLoading(true);
     const { data, error } = await supabase
       .from('users')
-      .select('username, created_at, id') // Parolni olmang!
+      .select('username, created_at, id')
       .eq('username', targetUsername)
       .single();
     
@@ -44,13 +43,18 @@ export default function Profile() {
   };
 
   const logout = () => {
-    localStorage.removeItem('mlbb_user');
-    router.push('/');
+    if (confirm("Haqiqatan ham chiqmoqchimisiz?")) {
+      localStorage.removeItem('mlbb_user');
+      router.push('/');
+    }
   };
 
   if (loading) return (
     <div className={styles.container}>
-      <h1 className={styles.goldText}>Yuklanmoqda...</h1>
+      <div className={styles.loadingWrapper}>
+        <div className={styles.spinner}></div>
+        <h2 className={styles.goldText}>Yuklanmoqda...</h2>
+      </div>
     </div>
   );
 
@@ -60,56 +64,86 @@ export default function Profile() {
         <title>Profil: {username}</title>
       </Head>
 
-      <main className={styles.main}>
-        <div className={styles.authCard}>
+      <main className={styles.main} style={{paddingBottom: '80px'}}> {/* Navbar joyi */}
+        
+        {/* PROFILE HEADER CARD */}
+        <div className={styles.profileCard}>
           
-          <div style={{textAlign: 'center', marginBottom: '20px'}}>
-             {/* Oddiy Avatar o'rniga doira */}
-             <div style={{
-               width: '80px', height: '80px', 
-               background: '#1a2639', borderRadius: '50%', 
-               border: '2px solid #cfae5f', margin: '0 auto 15px',
-               display: 'flex', alignItems: 'center', justifyContent: 'center',
-               fontSize: '2rem', color: '#cfae5f'
-             }}>
-               {profileData?.username?.[0].toUpperCase()}
-             </div>
-             
-             <h1 className={styles.goldText}>{profileData?.username}</h1>
-             <p className={styles.silverText}>ID: {profileData?.id.slice(0, 8)}...</p>
-          </div>
-
-          <div style={{borderTop: '1px solid #334455', paddingTop: '20px'}}>
-            <div className={styles.inputGroup}>
-              <label>Ro'yxatdan o'tgan sana:</label>
-              <div style={{color: '#fff', padding: '10px 0'}}>
-                {new Date(profileData?.created_at).toLocaleDateString()}
+          {/* Avatar Section */}
+          <div className={styles.profileHeader}>
+            <div className={styles.avatarWrapper}>
+              <div className={styles.avatarImg}>
+                 {profileData?.username?.[0].toUpperCase()}
+              </div>
+              <div className={styles.rankBadge}>
+                <FaStar /> 12
               </div>
             </div>
             
-            <div className={styles.inputGroup} style={{marginTop: '10px'}}>
-              <label>Daraja (Rank):</label>
-              <div style={{color: '#cfae5f', fontWeight: 'bold', padding: '10px 0'}}>
-                Epic II (Misol uchun)
+            <h1 className={styles.profileName}>{profileData?.username}</h1>
+            <p className={styles.profileId}>ID: {profileData?.id?.split('-')[0] || '123456'} (Server 1)</p>
+            
+            {/* Rank Display */}
+            <div className={styles.rankDisplay}>
+               <FaTrophy className={styles.rankIcon} />
+               <span>Mythic Glory</span>
+            </div>
+          </div>
+
+          {/* GAME STATS (MOCK DATA - O'xshatish uchun) */}
+          <div className={styles.statsGrid}>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>O'yinlar</span>
+              <span className={styles.statValue}>1,204</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>Win Rate</span>
+              <span className={styles.statValue} style={{color: '#cfae5f'}}>58.4%</span>
+            </div>
+            <div className={styles.statItem}>
+              <span className={styles.statLabel}>MVP</span>
+              <span className={styles.statValue}>342</span>
+            </div>
+          </div>
+
+          {/* DETAILS LIST */}
+          <div className={styles.detailsList}>
+            <div className={styles.detailRow}>
+              <div className={styles.detailIconBox}><FaCalendarAlt /></div>
+              <div className={styles.detailContent}>
+                <span>Ro'yxatdan o'tgan sana</span>
+                <strong>{new Date(profileData?.created_at).toLocaleDateString()}</strong>
+              </div>
+            </div>
+
+            <div className={styles.detailRow}>
+              <div className={styles.detailIconBox}><FaGamepad /></div>
+              <div className={styles.detailContent}>
+                <span>Sevimli Rol</span>
+                <strong>Jungle / Assassin</strong>
+              </div>
+            </div>
+
+            <div className={styles.detailRow}>
+              <div className={styles.detailIconBox}><FaMedal /></div>
+              <div className={styles.detailContent}>
+                <span>Kredit Bali</span>
+                <strong style={{color: '#00ffaa'}}>110 (A'lo)</strong>
               </div>
             </div>
           </div>
 
-          <div style={{marginTop: '30px', display: 'flex', gap: '10px', flexDirection: 'column'}}>
-            <button onClick={() => router.push('/')} className={styles.buttonSecondary}>
-              &larr; Yangiliklarga qaytish
+          {/* LOGOUT BUTTON */}
+          {currentUser?.username === profileData?.username && (
+            <button onClick={logout} className={styles.logoutBtn}>
+              <FaSignOutAlt style={{marginRight: '8px'}} /> Akkountdan Chiqish
             </button>
-            
-            {/* Faqat o'z profili bo'lsa chiqish tugmasini ko'rsatish */}
-            {currentUser?.username === profileData?.username && (
-              <button onClick={logout} className={styles.buttonPrimary} style={{backgroundColor: '#8b0000', color: '#fff'}}>
-                Akkountdan chiqish
-              </button>
-            )}
-          </div>
+          )}
 
         </div>
       </main>
+
+      <Navbar user={currentUser} />
     </div>
   )
 }

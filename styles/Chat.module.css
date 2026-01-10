@@ -1,0 +1,98 @@
+/* styles/Chat.module.css */
+
+/* ASOSIY LAYOUT */
+.telegramLayout {
+    display: flex;
+    height: 97vh;
+    background-color: #0f1724;
+    color: white;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  /* SIDEBAR */
+  .sidebar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: #17212b;
+    border-right: 1px solid #0e1621;
+  }
+  
+  @media (min-width: 768px) {
+    .sidebar { width: 350px; flex-shrink: 0; }
+  }
+  
+  .header { padding: 10px; background-color: #17212b; }
+  .searchBox { background-color: #242f3d; border-radius: 22px; padding: 8px 15px; display: flex; align-items: center; gap: 10px;margin-top: 60px;}
+  .searchBox input { background: transparent; border: none; color: #fff; width: 100%; outline: none; }
+  .chatList { flex: 1; overflow-y: auto; padding-bottom: 80px; }
+  
+  .chatItem { display: flex; align-items: center; padding: 12px; cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #0e1621; }
+  .chatItem:hover, .activeChat { background-color: #2b5278; } /* Active holat */
+  
+  .avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #cfae5f, #b3934b); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; margin-right: 12px; flex-shrink: 0; }
+  .info h3 { margin: 0; font-size: 1rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .info p { margin: 3px 0 0; font-size: 0.9rem; color: #8899aa; }
+  
+  /* CONTENT AREA (RIGHT SIDE) */
+  .contentArea {
+    flex: 1;
+    background-color: #0e1621;
+    background-image: url('https://w.wallhaven.cc/full/lm/wallhaven-lm5kql.jpg'); /* Pattern */
+    background-size: cover;
+    position: relative;
+  }
+  
+  /* CHAT WINDOW COMPONENT STYLES */
+  .chatWindowContainer { display: flex; flex-direction: column; height: 100%; background: rgba(14, 22, 33, 0.95); }
+  
+  .chatHeader { display: flex; align-items: center; padding: 10px 15px; background: #17212b; border-bottom: 1px solid #000; z-index: 10; height: 60px; }
+  .backBtn { background: none; border: none; color: white; font-size: 1.2rem; margin-right: 15px; cursor: pointer; }
+  .headerAvatar { width: 40px; height: 40px; border-radius: 50%; background: #cfae5f; color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 10px; }
+  .headerInfo h3 { margin: 0; font-size: 1rem; }
+  .headerInfo p { margin: 0; font-size: 0.8rem; color: #8899aa; }
+  
+  .messagesArea { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+  
+  .messageWrapper { display: flex; width: 100%; }
+  .myMsg { justify-content: flex-end; }
+  .otherMsg { justify-content: flex-start; }
+  
+  .messageBubble { max-width: 75%; padding: 8px 12px; border-radius: 12px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.3); word-wrap: break-word; }
+  .myMsg .messageBubble { background-color: #2b5278; color: #fff; border-bottom-right-radius: 0; }
+  .otherMsg .messageBubble { background-color: #182533; color: #fff; border-bottom-left-radius: 0; }
+  
+  .mediaImg, .mediaVideo { max-width: 100%; border-radius: 8px; margin-bottom: 5px; }
+  .msgTime { display: block; text-align: right; font-size: 0.7rem; opacity: 0.7; margin-top: 2px; }
+  
+  /* INPUT BAR */
+  .inputBar { display: flex; align-items: center; padding: 10px; background: #17212b; gap: 10px; }
+  .attachBtn, .sendBtn { background: none; border: none; color: #8899aa; font-size: 1.2rem; cursor: pointer; padding: 5px; }
+  .sendBtn { color: #5288c1; }
+  .inputBar input { flex: 1; background: #0e1621; border: none; padding: 12px; border-radius: 20px; color: white; outline: none; }
+  
+  /* JOIN BAR (Channel) */
+  .joinBar { padding: 15px; background: #17212b; text-align: center; color: #8899aa; border-top: 1px solid #000; }
+  
+  /* LOADERS */
+  .loaderCenter { display: flex; justify-content: center; padding: 20px; }
+  .loadingOverlay { display: flex; justify-content: center; align-items: center; height: 100%; width: 100%; color: #cfae5f; }
+  .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #cfae5f; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  
+  /* UTILS */
+  .fab { position: absolute; bottom: 80px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: #5288c1; color: white; border: none; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 90; }
+  .placeholder { height: 100%; display: flex; align-items: center; justify-content: center; }
+  .bubble { background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; color: #fff; }
+  
+  /* MODAL */
+  .modalOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 2000; }
+  .modal { background: #17212b; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; }
+  .closeBtn { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #8899aa; cursor: pointer; }
+  .typeSelector { display: flex; gap: 10px; margin: 15px 0; }
+  .typeSelector button { flex: 1; padding: 10px; background: #242f3d; border: none; color: #fff; border-radius: 6px; cursor: pointer; }
+  .activeType { background: #5288c1 !important; }
+  .modalInput { width: 100%; padding: 10px; background: #0e1621; border: 1px solid #5288c1; color: #fff; border-radius: 6px; margin-bottom: 15px; }
+  .createBtn { width: 100%; padding: 10px; background: #5288c1; border: none; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; }

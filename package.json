@@ -13,7 +13,8 @@
     "next": "16.1.1",
     "node-telegram-bot-api": "^0.67.0",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-icons": "^5.5.0"
   },
   "devDependencies": {
     "eslint": "9.39.2",
