@@ -447,7 +447,7 @@ export default function Profile() {
 
         .input-group label { display: block; color: #8899ac; margin-bottom: 5px; font-size: 14px; }
         .input-group input {
-          width: 100%; padding: 12px; background: #0b1120; border: 1px solid #2d3b55;
+          width: 93%; padding: 12px; background: #0b1120; border: 1px solid #2d3b55;
           border-radius: 8px; color: #fff; outline: none; margin-bottom: 20px; font-size: 16px;
         }
         .input-group input:focus { border-color: #cfab56; }
