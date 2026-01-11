@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabaseClient'
 import Navbar from '../../components/Navbar'
 import ChatWindow from '../../components/ChatWindow' 
 
-// Catbox ga rasm yuklash
+// --- CATBOX UPLOAD ---
 const uploadToCatbox = (file) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -21,6 +21,7 @@ const uploadToCatbox = (file) => {
       if (xhr.status === 200) resolve(xhr.responseText);
       else reject('Upload failed');
     };
+    xhr.onerror = () => reject('Network Error');
     xhr.open('POST', '/api/catbox', true);
     xhr.send(formData);
   });
@@ -32,17 +33,17 @@ export default function ChatList() {
   
   // Data States
   const [chats, setChats] = useState([]); 
-  const [suggestedUsers, setSuggestedUsers] = useState([]); // Tavsiya etilganlar
+  const [suggestedUsers, setSuggestedUsers] = useState([]); 
   const [searchResults, setSearchResults] = useState([]); 
   const [selectedChatId, setSelectedChatId] = useState(null); 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // UI States
   const [isMobileView, setIsMobileView] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Create Modal States
+  // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createType, setCreateType] = useState('group');
   const [createName, setCreateName] = useState('');
@@ -52,16 +53,18 @@ export default function ChatList() {
   const [creating, setCreating] = useState(false);
 
   // Context Menu & Long Press
-  const [contextMenu, setContextMenu] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null); // { type: 'desktop'|'mobile', x, y, chat }
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const longPressTimer = useRef(null); // Bosib turish uchun timer
+  const longPressTimer = useRef(null);
 
   useEffect(() => {
+    // Mobile Check
     const handleResize = () => setIsMobileView(window.innerWidth < 768);
     handleResize();
     window.addEventListener('resize', handleResize);
     window.addEventListener('click', () => setContextMenu(null));
 
+    // Auth Check
     const storedUser = localStorage.getItem('mlbb_user');
     if (!storedUser) {
       router.push('/');
@@ -79,6 +82,7 @@ export default function ChatList() {
 
   const fetchMyChats = async (userId) => {
     setLoading(true);
+    // Realtime chat update uchun bu yerda subscribe qilish mumkin
     const { data, error } = await supabase
       .from('room_participants')
       .select(`room:rooms (id, name, type, created_at, image_url, description)`)
@@ -88,12 +92,10 @@ export default function ChatList() {
     if (data && data.length > 0) {
       const formatted = data.map(item => ({
         ...item.room,
-        last_message: "Suhbat...", // Real loyihada DB dan olinadi
         time: new Date(item.room.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
       }));
       setChats(formatted);
     } else {
-      // Agar chatlar yo'q bo'lsa, takliflarni yuklaymiz
       setChats([]);
       fetchSuggestions(userId);
     }
@@ -112,26 +114,7 @@ export default function ChatList() {
     }
   };
 
-  // --- LONG PRESS LOGIC (MOBILE) ---
-  const handleTouchStart = (e, chat) => {
-    if (!isMobileView) return;
-    longPressTimer.current = setTimeout(() => {
-      // 800ms bosib tursa menyu ochiladi
-      setContextMenu({
-        x: e.touches[0].pageX,
-        y: e.touches[0].pageY,
-        chat: chat
-      });
-    }, 800);
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-    }
-  };
-
-  // --- QIDIRUV ---
+  // --- ACTIONS ---
   const handleSearch = async (e) => {
     const query = e.target.value;
     setSearchQuery(query);
@@ -142,7 +125,6 @@ export default function ChatList() {
 
       const formattedUsers = users?.map(u => ({ ...u, type: 'user', name: u.username })) || [];
       const formattedRooms = rooms || [];
-      
       setSearchResults([...formattedUsers, ...formattedRooms]);
     } else {
       setSearchResults([]);
@@ -150,17 +132,25 @@ export default function ChatList() {
   };
 
   const handleChatSelect = async (chat) => {
+    // Agar User bo'lsa -> Private Room yaratish yoki borini ochish
     if (chat.type === 'user') {
-      const { data: room } = await supabase.from('rooms').insert([{ type: 'private', name: chat.username }]).select().single();
-      if (room) {
-        await supabase.from('room_participants').insert([
-          { room_id: room.id, user_id: user.id },
-          { room_id: room.id, user_id: chat.id }
-        ]);
-        setSelectedChatId(room.id);
-        fetchMyChats(user.id);
+      // Mavjud private chatni tekshirish (Optimallashtirish kerak, hozir sodda versiya)
+      // Bu yerda backend logikasi murakkabroq bo'lishi mumkin, lekin sodda create qilamiz:
+      const { data: existingRoom } = await supabase
+          .from('rooms')
+          .insert([{ type: 'private', name: chat.username }])
+          .select().single();
+      
+      if (existingRoom) {
+         await supabase.from('room_participants').insert([
+           { room_id: existingRoom.id, user_id: user.id },
+           { room_id: existingRoom.id, user_id: chat.id }
+         ]);
+         setSelectedChatId(existingRoom.id);
+         fetchMyChats(user.id);
       }
     } else {
+      // Guruh yoki Kanalga qo'shilish
       const isMember = chats.some(c => c.id === chat.id);
       if (!isMember) {
         await supabase.from('room_participants').insert([{ room_id: chat.id, user_id: user.id }]);
@@ -172,22 +162,13 @@ export default function ChatList() {
     setSearchQuery('');
   };
 
-  // --- YARATISH ---
-  const handleAvatarChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setCreateAvatar(file);
-      setPreviewAvatar(URL.createObjectURL(file));
-    }
-  };
-
   const createItem = async () => {
     if (!createName.trim()) return;
     setCreating(true);
 
     let imageUrl = null;
     if (createAvatar) {
-      try { imageUrl = await uploadToCatbox(createAvatar); } catch (err) {}
+      try { imageUrl = await uploadToCatbox(createAvatar); } catch (err) { console.error(err); }
     }
 
     const { data: room } = await supabase
@@ -208,13 +189,6 @@ export default function ChatList() {
     setCreating(false);
   };
 
-  // --- CONTEXT MENU ---
-  const handleContextMenu = (e, chat) => {
-    if (isMobileView) return; 
-    e.preventDefault();
-    setContextMenu({ x: e.pageX, y: e.pageY, chat: chat });
-  };
-
   const handleDeleteChat = async () => {
     if (!showDeleteConfirm) return;
     await supabase.from('room_participants').delete().eq('room_id', showDeleteConfirm.id).eq('user_id', user.id);
@@ -223,24 +197,46 @@ export default function ChatList() {
     fetchMyChats(user.id);
   };
 
+  // --- TOUCH HANDLERS (Mobile Long Press) ---
+  const handleTouchStart = (e, chat) => {
+    if (!isMobileView) return;
+    longPressTimer.current = setTimeout(() => {
+      if (navigator.vibrate) navigator.vibrate(50);
+      setContextMenu({ type: 'mobile', chat: chat });
+    }, 600);
+  };
+
+  const handleTouchEnd = () => clearTimeout(longPressTimer.current);
+
+  const handleContextMenu = (e, chat) => {
+    e.preventDefault();
+    if (isMobileView) return; 
+    setContextMenu({ type: 'desktop', x: e.pageX, y: e.pageY, chat: chat });
+  };
+
+
+  // --- RENDER ---
   if (!user) return null;
 
+  // 1. MOBILE CHAT VIEW (Full Screen)
   if (isMobileView && selectedChatId) {
     return (
-      <div className="mobile-layout">
+      <div className="mobile-chat-wrapper">
         <ChatWindow chatId={selectedChatId} currentUser={user} isMobile={true} onBack={() => setSelectedChatId(null)} />
-        <style jsx>{`.mobile-layout { height: 100vh; background: #0b1120; }`}</style>
+        <style jsx>{`
+          .mobile-chat-wrapper { position: fixed; top: 0; left: 0; width: 100%; height: 100dvh; z-index: 5000; background: #0b1120; }
+        `}</style>
       </div>
     );
   }
 
+  // 2. MAIN LIST VIEW
   return (
     <div className="layout">
       <Head><title>Chat | MLBB</title></Head>
 
       <div className="sidebar">
-        
-        {/* HEADER (Gold Style) */}
+        {/* HEADER */}
         <div className="sidebar-header">
           {!isSearching ? (
             <div className="header-default">
@@ -270,10 +266,10 @@ export default function ChatList() {
               {searchResults.map((item) => (
                 <div key={item.id} className="chat-item" onClick={() => handleChatSelect(item)}>
                   <div className="avatar global">
-                     {item.image_url ? <img src={item.image_url} /> : (item.name[0])}
+                     {item.image_url ? <img src={item.image_url} className="avatar-img" /> : (item.name?.[0])}
                   </div>
                   <div className="info">
-                    <h3>{item.name}</h3>
+                    <h3>{item.name || item.username}</h3>
                     <p className="status-text">{item.type === 'user' ? 'Foydalanuvchi' : 'Guruh/Kanal'}</p>
                   </div>
                 </div>
@@ -281,13 +277,12 @@ export default function ChatList() {
             </div>
           )}
 
-          {/* MY CHATS & SUGGESTIONS */}
+          {/* MY CHATS */}
           {!isSearching && (
             <div className="list-section">
               {loading && <div className="spinner"></div>}
               
-              {/* Agar Chatlar bo'lsa */}
-              {chats.length > 0 && chats.map((chat) => (
+              {chats.map((chat) => (
                 <div 
                   key={chat.id} 
                   className={`chat-item ${selectedChatId === chat.id ? 'active' : ''}`} 
@@ -309,25 +304,23 @@ export default function ChatList() {
                       <span className="time">{chat.time}</span>
                     </div>
                     <p className="last-msg">
-                       {chat.description ? chat.description.slice(0, 25) + '...' : 'Suhbat...'}
+                       {chat.description || 'Suhbatga kiring...'}
                     </p>
                   </div>
                 </div>
               ))}
 
-              {/* Agar Chatlar Bo'sh bo'lsa -> TAKLIFLAR */}
+              {/* SUGGESTIONS */}
               {chats.length === 0 && !loading && (
                 <div className="suggestions-box">
-                  <div className="empty-state">
-                    <p>Sizda hali suhbatlar yo'q</p>
-                  </div>
-                  <h4 className="section-title gold-text">MAVJUD FOYDALANUVCHILAR</h4>
+                  <div className="empty-state"><p>Sizda hali suhbatlar yo'q</p></div>
+                  <h4 className="section-title gold-text">TAVSIYA ETILGANLAR</h4>
                   {suggestedUsers.map((u) => (
                      <div key={u.id} className="chat-item suggestion" onClick={() => handleChatSelect(u)}>
                         <div className="avatar global"><FaUserAstronaut /></div>
                         <div className="info">
                           <h3>{u.username}</h3>
-                          <p className="status-text">Yangi suhbat boshlash</p>
+                          <p className="status-text">Yangi suhbat</p>
                         </div>
                         <FaPlus className="plus-icon" />
                      </div>
@@ -340,10 +333,12 @@ export default function ChatList() {
 
         {/* FAB */}
         <button className="fab" onClick={() => setShowCreateModal(true)}><FaPen /></button>
+        
+        {/* NAVBAR */}
         <div className="navbar-wrapper"><Navbar user={user} /></div>
       </div>
 
-      {/* CONTENT AREA */}
+      {/* DESKTOP CONTENT AREA */}
       {!isMobileView && (
         <div className="content-area">
           {selectedChatId ? (
@@ -352,7 +347,7 @@ export default function ChatList() {
             <div className="no-chat-selected">
               <div className="placeholder-content">
                 <div className="placeholder-icon"><FaUserFriends /></div>
-                <h2>Chatni tanlang</h2>
+                <h2>Suhbatni tanlang</h2>
               </div>
             </div>
           )}
@@ -371,7 +366,9 @@ export default function ChatList() {
               <label htmlFor="avatar-upload" className="avatar-preview">
                 {previewAvatar ? <img src={previewAvatar} /> : <FaCamera />}
               </label>
-              <input type="file" id="avatar-upload" hidden onChange={handleAvatarChange} accept="image/*"/>
+              <input type="file" id="avatar-upload" hidden onChange={(e) => {
+                 if(e.target.files[0]) { setCreateAvatar(e.target.files[0]); setPreviewAvatar(URL.createObjectURL(e.target.files[0])); }
+              }} accept="image/*"/>
             </div>
             <div className="type-selector">
               <button className={`type-btn ${createType === 'group' ? 'active' : ''}`} onClick={() => setCreateType('group')}><FaUserFriends /> Guruh</button>
@@ -384,10 +381,27 @@ export default function ChatList() {
         </div>
       )}
 
-      {contextMenu && (
-        <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }} onClick={(e) => e.stopPropagation()}>
+      {/* DESKTOP CONTEXT MENU */}
+      {contextMenu?.type === 'desktop' && (
+        <div className="context-menu desktop" style={{ top: contextMenu.y, left: contextMenu.x }} onClick={(e) => e.stopPropagation()}>
           <div className="menu-item delete" onClick={() => { setShowDeleteConfirm(contextMenu.chat); setContextMenu(null); }}><FaTrash /> O'chirish</div>
           <div className="menu-item block" onClick={() => setContextMenu(null)}><FaBan /> Bloklash</div>
+        </div>
+      )}
+
+      {/* MOBILE BOTTOM SHEET MENU */}
+      {contextMenu?.type === 'mobile' && (
+        <div className="mobile-sheet-overlay" onClick={() => setContextMenu(null)}>
+          <div className="mobile-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle"></div>
+            <h3 className="sheet-title">{contextMenu.chat.name}</h3>
+            <div className="sheet-item delete" onClick={() => { setShowDeleteConfirm(contextMenu.chat); setContextMenu(null); }}>
+              <FaTrash /> Suhbatni o'chirish
+            </div>
+            <div className="sheet-item" onClick={() => setContextMenu(null)}>
+              <FaBan /> Bloklash
+            </div>
+          </div>
         </div>
       )}
 
@@ -406,64 +420,75 @@ export default function ChatList() {
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto:wght@400;500&display=swap');
-        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif; overflow: hidden; }
+        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif; overflow: hidden; overscroll-behavior: none; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #2d3b55; border-radius: 2px; }
       `}</style>
 
       <style jsx>{`
-        .layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+        /* LAYOUT */
+        .layout { display: flex; height: 100dvh; width: 100vw; overflow: hidden; }
         .sidebar { 
           width: 100%; height: 100%; background: #0b1120; 
           display: flex; flex-direction: column; border-right: 1px solid #2d3b55; position: relative; 
         }
         @media (min-width: 768px) { .sidebar { width: 350px; min-width: 350px; } }
 
-        /* HEADER (GOLD THEME) */
-        .sidebar-header { height: 60px; background: #0f172a; flex-shrink: 0; border-bottom: 1px solid #2d3b55; }
+        /* HEADER */
+        .sidebar-header { height: 60px; background: #0f172a; flex-shrink: 0; border-bottom: 1px solid #1e293b; }
         .header-default { display: flex; align-items: center; justify-content: space-between; padding: 0 15px; height: 100%; }
         .app-title { font-family: 'Rajdhani', sans-serif; color: #cfab56; font-size: 22px; letter-spacing: 1px; margin: 0; }
-        .search-btn { background: none; border: none; color: #cfab56; font-size: 20px; cursor: pointer; }
+        .search-btn { background: none; border: none; color: #cfab56; font-size: 20px; padding: 10px; cursor: pointer; }
 
-        .header-search { display: flex; align-items: center; height: 100%; padding: 0 10px; background: #0f172a; }
+        .header-search { display: flex; align-items: center; height: 100%; padding: 0 5px; background: #0f172a; }
         .back-btn { background: none; border: none; color: #cfab56; font-size: 20px; cursor: pointer; padding: 10px; }
         .search-input { flex: 1; background: transparent; border: none; color: #fff; font-size: 16px; padding: 10px; outline: none; }
-        .clear-btn { background: none; border: none; color: #6c7a89; font-size: 16px; cursor: pointer; }
+        .clear-btn { background: none; border: none; color: #6c7a89; font-size: 16px; padding: 10px; }
 
         /* LIST */
-        .chat-list-container { flex: 1; overflow-y: auto; padding: 5px; }
+        .chat-list-container { flex: 1; overflow-y: auto; padding: 5px 0; -webkit-overflow-scrolling: touch; }
+        .list-section { padding: 0 5px; }
         .chat-item { 
-          display: flex; align-items: center; padding: 12px; border-radius: 12px; 
-          cursor: pointer; transition: 0.2s; position: relative; margin-bottom: 4px;
+          display: flex; align-items: center; padding: 12px 10px; border-radius: 12px; 
+          cursor: pointer; transition: 0.2s; margin-bottom: 2px;
+          user-select: none; /* Prevent text selection on long press */
         }
-        .chat-item:hover { background: rgba(255, 255, 255, 0.05); }
-        .chat-item.active { background: rgba(207, 171, 86, 0.15); border-left: 3px solid #cfab56; }
+        .chat-item:active { background: rgba(255, 255, 255, 0.08); }
+        .chat-item.active { background: rgba(207, 171, 86, 0.1); border-left: 2px solid #cfab56; }
 
         .avatar { 
           width: 50px; height: 50px; border-radius: 50%; background: #1e2a45; 
-          display: flex; align-items: center; justify-content: center; margin-right: 15px; 
-          font-size: 22px; color: #cfab56; border: 1px solid #2d3b55; flex-shrink: 0; overflow: hidden;
+          display: flex; align-items: center; justify-content: center; margin-right: 12px; 
+          font-size: 20px; color: #cfab56; border: 1px solid #2d3b55; flex-shrink: 0; overflow: hidden;
         }
         .avatar-img { width: 100%; height: 100%; object-fit: cover; }
         
         .info { flex: 1; overflow: hidden; }
+        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .info h3 { margin: 0; font-size: 16px; font-weight: 500; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .time { font-size: 11px; color: #6c7a89; }
-        .last-msg { margin: 2px 0 0 0; font-size: 13px; color: #8899ac; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .time { font-size: 11px; color: #64748b; margin-left: 5px; white-space: nowrap; }
+        .last-msg { margin: 0; font-size: 13px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .chat-item.active .last-msg { color: #cfab56; }
+        .status-text { margin: 0; font-size: 12px; color: #64748b; }
 
         /* SUGGESTIONS */
-        .suggestions-box { padding: 10px; }
-        .empty-state { text-align: center; color: #6c7a89; padding: 20px 0; }
-        .gold-text { color: #cfab56; font-size: 12px; margin-bottom: 10px; letter-spacing: 1px; }
-        .suggestion { border: 1px dashed #2d3b55; }
-        .plus-icon { color: #cfab56; font-size: 14px; }
+        .empty-state { text-align: center; color: #64748b; padding: 30px 0; font-size: 14px; }
+        .section-title { font-size: 11px; color: #cfab56; padding: 10px; margin: 0; letter-spacing: 1px; opacity: 0.8; }
+        .suggestion { opacity: 0.9; }
+        .plus-icon { color: #cfab56; font-size: 12px; margin-left: 10px; }
+        .no-result { text-align: center; padding: 20px; color: #64748b; }
 
         /* FAB */
         .fab { 
-          position: absolute; bottom: 90px; right: 20px; width: 55px; height: 55px; 
+          position: absolute; bottom: 80px; right: 20px; width: 56px; height: 56px; 
           border-radius: 50%; background: linear-gradient(135deg, #cfab56, #a67c2e); border: none; color: #000; 
           font-size: 20px; display: flex; align-items: center; justify-content: center; 
-          cursor: pointer; box-shadow: 0 4px 15px rgba(207, 171, 86, 0.4); 
+          cursor: pointer; box-shadow: 0 4px 15px rgba(207, 171, 86, 0.4); z-index: 100;
         }
+        
+        /* NAVBAR WRAPPER */
+        .navbar-wrapper { flex-shrink: 0; border-top: 1px solid #1e293b; background: #0f172a; }
 
         /* DESKTOP CONTENT */
         .content-area { flex: 1; background: #0b1120; display: flex; flex-direction: column; border-left: 1px solid #2d3b55; }
@@ -471,20 +496,37 @@ export default function ChatList() {
         .placeholder-icon { font-size: 80px; color: #1e2a45; margin-bottom: 20px; }
         .placeholder-content h2 { margin: 0; color: #cfab56; }
 
-        /* CONTEXT MENU */
-        .context-menu { 
-          position: fixed; background: #1e2a45; border: 1px solid #cfab56; border-radius: 8px; 
-          box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 3000; overflow: hidden; min-width: 160px;
+        /* DESKTOP CONTEXT MENU */
+        .context-menu.desktop { 
+          position: fixed; background: #1e2a45; border: 1px solid #2d3b55; border-radius: 8px; 
+          box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 3000; min-width: 160px;
         }
-        .menu-item { padding: 12px 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: #fff; }
-        .menu-item:hover { background: rgba(207, 171, 86, 0.1); }
+        .menu-item { padding: 12px 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; color: #e2e8f0; }
+        .menu-item:hover { background: #334155; }
         .menu-item.delete { color: #ff595a; }
 
-        /* MODALS (GOLD THEME) */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(5px); }
-        .modal { background: #121a2b; padding: 25px; border-radius: 16px; width: 90%; max-width: 380px; border: 1px solid #cfab56; box-shadow: 0 0 30px rgba(207, 171, 86, 0.15); }
+        /* MOBILE SHEET */
+        .mobile-sheet-overlay {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0,0,0,0.6); z-index: 6000; display: flex; align-items: flex-end;
+        }
+        .mobile-sheet {
+          width: 100%; background: #1e293b; border-radius: 16px 16px 0 0; padding: 10px 0 20px;
+          animation: slideUp 0.2s ease-out; box-shadow: 0 -5px 20px rgba(0,0,0,0.4);
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .sheet-handle { width: 40px; height: 4px; background: #475569; margin: 0 auto 15px; border-radius: 2px; }
+        .sheet-title { text-align: center; margin: 0 0 15px; font-size: 16px; color: #fff; }
+        .sheet-item { padding: 15px 20px; display: flex; align-items: center; gap: 15px; font-size: 16px; color: #fff; }
+        .sheet-item:active { background: #334155; }
+        .sheet-item.delete { color: #ff595a; }
+
+        /* MODALS */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 7000; backdrop-filter: blur(5px); }
+        .modal { background: #121a2b; padding: 20px; border-radius: 16px; width: 90%; max-width: 380px; border: 1px solid #cfab56; box-shadow: 0 0 30px rgba(207, 171, 86, 0.15); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-header h3 { margin: 0; color: #cfab56; font-family: 'Rajdhani', sans-serif; }
-        .close-btn { background: none; border: none; color: #6c7a89; font-size: 20px; cursor: pointer; }
+        .close-btn { background: none; border: none; color: #94a3b8; font-size: 22px; padding: 5px; }
         
         .avatar-preview { 
           width: 80px; height: 80px; border-radius: 50%; background: #1e2a45; border: 2px dashed #cfab56;
@@ -494,21 +536,20 @@ export default function ChatList() {
         .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
 
         .type-selector { display: flex; gap: 10px; margin-bottom: 15px; }
-        .type-btn { flex: 1; padding: 10px; background: #0b1120; border: 1px solid #2d3b55; color: #8899ac; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .type-btn { flex: 1; padding: 10px; background: #0b1120; border: 1px solid #334155; color: #94a3b8; border-radius: 8px; font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .type-btn.active { background: rgba(207, 171, 86, 0.1); border-color: #cfab56; color: #cfab56; }
 
         .modal-input, .modal-textarea { 
-          width: 100%; padding: 12px; background: #0b1120; border: 1px solid #2d3b55; 
-          border-radius: 8px; color: #fff; outline: none; margin-bottom: 15px; box-sizing: border-box;
+          width: 100%; padding: 12px; background: #0b1120; border: 1px solid #334155; 
+          border-radius: 8px; color: #fff; outline: none; margin-bottom: 15px; box-sizing: border-box; font-size: 16px;
         }
         .modal-input:focus, .modal-textarea:focus { border-color: #cfab56; }
 
-        .create-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #cfab56, #a67c2e); border: none; color: #000; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .create-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #cfab56, #a67c2e); border: none; color: #000; font-weight: bold; border-radius: 8px; font-size: 16px; }
 
-        .confirm-modal { text-align: center; }
         .confirm-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .confirm-actions button { flex: 1; padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
-        .cancel-btn { background: #1e2a45; color: #fff; }
+        .confirm-actions button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-weight: bold; font-size: 15px; }
+        .cancel-btn { background: #334155; color: #fff; }
         .delete-btn { background: #ff595a; color: #fff; }
 
         .spinner { width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #cfab56; border-radius: 50%; animation: spin 0.8s infinite linear; margin: 20px auto; }
