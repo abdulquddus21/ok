@@ -111,7 +111,8 @@ export default function News() {
       {/* --- STYLES --- */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto:wght@400;500&display=swap');
-        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif; }
+        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif;  /* Mobil scroll effektini yumshatish */
+          -webkit-tap-highlight-color: transparent; }
       `}</style>
 
       <style jsx>{`

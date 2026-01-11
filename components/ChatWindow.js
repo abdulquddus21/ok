@@ -595,7 +595,8 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
 
       <style jsx>{`
         /* GLOBAL RESET */
-        :global(body) { overscroll-behavior: none; background: #0e1621; }
+        :global(body) { overscroll-behavior: none; background: #0e1621;  /* Mobil scroll effektini yumshatish */
+          -webkit-tap-highlight-color: transparent;}
         .chat-window { 
           display: flex; flex-direction: column; height: 100vh; 
           background-color: #0e1621; background-image: url("https://web.telegram.org/img/bg_0.png"); 

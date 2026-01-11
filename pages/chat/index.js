@@ -418,7 +418,8 @@ export default function ChatList() {
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto:wght@400;500&display=swap');
-        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif; overflow: hidden; overscroll-behavior: none; }
+        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif; overflow: hidden; overscroll-behavior: none;   /* Mobil scroll effektini yumshatish */
+          -webkit-tap-highlight-color: transparent;}
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #2d3b55; border-radius: 2px; }

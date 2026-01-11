@@ -232,6 +232,8 @@ export default function ChatRoom() {
           background-blend-mode: overlay;
           font-family: 'Segoe UI', sans-serif;
           position: relative;
+           /* Mobil scroll effektini yumshatish */
+          -webkit-tap-highlight-color: transparent;
         }
 
         .loading {

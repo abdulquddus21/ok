@@ -1,6 +1,7 @@
 import Head from 'next/head'
 import { useRouter } from 'next/router'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
+import useSWR, { mutate } from 'swr' // KESHLASH UCHUN MUHIM
 import { 
   FaSignOutAlt, FaCalendarAlt, FaPen, FaCamera, FaTimes, 
   FaBullhorn, FaComments, FaFingerprint, FaUserAstronaut 
@@ -10,7 +11,35 @@ import Navbar from '../../components/Navbar'
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// --- CATBOX UPLOAD FUNCTION ---
+// --- FETCHER FUNCTION (Ma'lumotlarni olish uchun) ---
+const fetchProfileData = async (targetUsername) => {
+  if (!targetUsername) return null;
+
+  // 1. User ma'lumotlari
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('username', targetUsername)
+    .single();
+
+  if (error || !user) throw new Error('User not found');
+
+  // 2. Statistika (Parallel so'rov - tezroq ishlashi uchun)
+  const [channels, chats] = await Promise.all([
+    supabase.from('rooms').select('*', { count: 'exact', head: true }).eq('owner_id', user.id).eq('type', 'channel'),
+    supabase.from('room_participants').select('*', { count: 'exact', head: true }).eq('user_id', user.id)
+  ]);
+
+  return {
+    user,
+    stats: {
+      channels: channels.count || 0,
+      chats: chats.count || 0
+    }
+  };
+};
+
+// --- CATBOX UPLOAD ---
 const uploadToCatbox = (file) => {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
@@ -34,9 +63,6 @@ export default function Profile() {
   const { username } = router.query;
   
   const [currentUser, setCurrentUser] = useState(null);
-  const [profileData, setProfileData] = useState(null);
-  const [stats, setStats] = useState({ channels: 0, chats: 0 });
-  const [loading, setLoading] = useState(true);
   
   // Edit States
   const [showEditModal, setShowEditModal] = useState(false);
@@ -45,55 +71,38 @@ export default function Profile() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  // --- LOCALSTORAGE CHECK ---
   useEffect(() => {
     const storedUser = localStorage.getItem('mlbb_user');
     if (!storedUser) {
       router.push('/');
-      return;
+    } else {
+      setCurrentUser(JSON.parse(storedUser));
     }
-    const user = JSON.parse(storedUser);
-    setCurrentUser(user);
+  }, []);
 
-    if (username) {
-      fetchProfile(username);
+  // --- SWR BILAN MA'LUMOT OLISH (TEZ VA KESHLANGAN) ---
+  // router.isReady kutamiz, keyin so'rov yuboramiz
+  const shouldFetch = router.isReady && username;
+  const { data: profileFullData, error, isLoading } = useSWR(
+    shouldFetch ? `profile-${username}` : null, 
+    () => fetchProfileData(username),
+    {
+      revalidateOnFocus: false, // Boshqa tabdan qaytganda qayta yuklamasin (tezlik uchun)
+      dedupingInterval: 60000, // 1 daqiqa davomida qayta so'rov yubormasin (keshdan oladi)
     }
-  }, [username]);
+  );
 
-  const fetchProfile = async (targetUsername) => {
-    setLoading(true);
-    
-    // 1. User ma'lumotlari
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', targetUsername)
-      .single();
-    
-    if (user) {
-      setProfileData(user);
-      setEditName(user.username);
-      setPreviewUrl(user.avatar_url);
+  const profileData = profileFullData?.user;
+  const stats = profileFullData?.stats || { channels: 0, chats: 0 };
 
-      // 2. Statistika: Yaratgan kanallari soni
-      const { count: channelsCount } = await supabase
-        .from('rooms')
-        .select('*', { count: 'exact', head: true })
-        .eq('owner_id', user.id)
-        .eq('type', 'channel');
-
-      // 3. Statistika: Qo'shilgan chatlari soni
-      const { count: chatsCount } = await supabase
-        .from('room_participants')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-
-      setStats({
-        channels: channelsCount || 0,
-        chats: chatsCount || 0
-      });
+  // Modal ochilganda inputlarni to'ldirish
+  useEffect(() => {
+    if (profileData && currentUser?.id === profileData.id) {
+      setEditName(profileData.username);
+      setPreviewUrl(profileData.avatar_url);
     }
-    setLoading(false);
-  };
+  }, [profileData, currentUser, showEditModal]);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -109,13 +118,10 @@ export default function Profile() {
 
     try {
       let avatarUrl = profileData.avatar_url;
-
-      // Agar yangi rasm yuklangan bo'lsa
       if (editFile) {
         avatarUrl = await uploadToCatbox(editFile);
       }
 
-      // Bazani yangilash
       const { data, error } = await supabase
         .from('users')
         .update({ username: editName, avatar_url: avatarUrl })
@@ -125,16 +131,18 @@ export default function Profile() {
 
       if (error) throw error;
 
-      // LocalStorage va State ni yangilash
+      // Update LocalStorage
       localStorage.setItem('mlbb_user', JSON.stringify(data));
       setCurrentUser(data);
-      setProfileData(data);
+      
+      // SWR keshini yangilash (sahifani reload qilmasdan)
+      await mutate(`profile-${username}`); // Eski keshni o'chirib yangisini oladi
+      
       setShowEditModal(false);
       toast.success("Profil yangilandi!");
       
-      // Agar username o'zgargan bo'lsa URLni to'g'irlash
       if (username !== editName) {
-        router.push(`/profile/${editName}`);
+        router.replace(`/profile/${editName}`); // Push o'rniga Replace (tarixni buzmaslik uchun)
       }
 
     } catch (error) {
@@ -145,98 +153,101 @@ export default function Profile() {
   };
 
   const logout = () => {
-    if (confirm("Haqiqatan ham chiqmoqchimisiz?")) {
+    if (confirm("Chiqishni xohlaysizmi?")) {
       localStorage.removeItem('mlbb_user');
       router.push('/');
     }
   };
 
-  if (loading) return (
-    <div className="container center-screen">
-      <div className="spinner"></div>
-    </div>
-  );
-
-  const isMyProfile = currentUser?.id === profileData?.id;
+  // User aniqlash
+  const isMyProfile = currentUser && profileData && currentUser.id === profileData.id;
 
   return (
     <div className="container">
       <Head>
-        <title>Profil: {profileData?.username}</title>
+        <title>{profileData ? `Profil: ${profileData.username}` : 'Yuklanmoqda...'}</title>
       </Head>
       <ToastContainer theme="dark" />
 
       <div className="bg-glow"></div>
 
       <main className="main">
-        
-        {/* PROFILE CARD */}
-        <div className="card profile-card">
-          
-          {/* TOP SECTION */}
-          <div className="profile-header">
-            <div className="avatar-wrapper">
-              <div className="avatar-frame">
-                {profileData?.avatar_url ? (
-                  <img src={profileData.avatar_url} alt="ava" className="avatar-img" />
-                ) : (
-                  <div className="avatar-placeholder">{profileData?.username?.[0]?.toUpperCase()}</div>
-                )}
-                
-                {/* Agar o'z profili bo'lsa edit knopkasi */}
-                {isMyProfile && (
-                  <button className="edit-avatar-btn" onClick={() => setShowEditModal(true)}>
-                    <FaCamera />
-                  </button>
-                )}
-              </div>
+        {/* SKELETON LOADING (Spinner o'rniga chiroyli yuklanish) */}
+        {isLoading || !profileData ? (
+          <div className="card skeleton-card">
+            <div className="sk-avatar"></div>
+            <div className="sk-line w-50"></div>
+            <div className="sk-line w-30"></div>
+            <div className="sk-stats">
+              <div className="sk-box"></div>
+              <div className="sk-box"></div>
+              <div className="sk-box"></div>
             </div>
+          </div>
+        ) : (
+          /* REAL PROFILE CARD */
+          <div className="card profile-card">
             
-            <div className="header-info">
-              <h1 className="profile-name">
-                {profileData?.username} 
-                {isMyProfile && <FaPen className="edit-name-icon" onClick={() => setShowEditModal(true)} />}
-              </h1>
-              <div className="id-badge">
-                <FaFingerprint /> ID: {profileData?.id?.slice(0, 8)}
+            <div className="profile-header">
+              <div className="avatar-wrapper">
+                <div className="avatar-frame">
+                  {profileData.avatar_url ? (
+                    <img src={profileData.avatar_url} alt="ava" className="avatar-img" />
+                  ) : (
+                    <div className="avatar-placeholder">{profileData.username[0]?.toUpperCase()}</div>
+                  )}
+                  
+                  {isMyProfile && (
+                    <button className="edit-avatar-btn" onClick={() => setShowEditModal(true)}>
+                      <FaCamera />
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <div className="header-info">
+                <h1 className="profile-name">
+                  {profileData.username} 
+                  {isMyProfile && <FaPen className="edit-name-icon" onClick={() => setShowEditModal(true)} />}
+                </h1>
+                <div className="id-badge">
+                  <FaFingerprint /> ID: {profileData.id.slice(0, 8)}
+                </div>
               </div>
             </div>
+
+            <div className="stats-grid">
+              <div className="stat-item">
+                <div className="icon-circle gold"><FaBullhorn /></div>
+                <span className="stat-value">{stats.channels}</span>
+                <span className="stat-label">Kanallar</span>
+              </div>
+              <div className="stat-item">
+                <div className="icon-circle blue"><FaComments /></div>
+                <span className="stat-value">{stats.chats}</span>
+                <span className="stat-label">Suhbatlar</span>
+              </div>
+              <div className="stat-item">
+                <div className="icon-circle green"><FaCalendarAlt /></div>
+                <span className="stat-value date-val">
+                  {new Date(profileData.created_at).toLocaleDateString()}
+                </span>
+                <span className="stat-label">Qo'shilgan</span>
+              </div>
+            </div>
+
+            {isMyProfile && (
+              <div className="action-area">
+                <button onClick={logout} className="btn-logout">
+                  <FaSignOutAlt /> Tizimdan Chiqish
+                </button>
+              </div>
+            )}
           </div>
-
-          {/* REAL STATS GRID */}
-          <div className="stats-grid">
-            <div className="stat-item">
-              <div className="icon-circle gold"><FaBullhorn /></div>
-              <span className="stat-value">{stats.channels}</span>
-              <span className="stat-label">Kanallar</span>
-            </div>
-            <div className="stat-item">
-              <div className="icon-circle blue"><FaComments /></div>
-              <span className="stat-value">{stats.chats}</span>
-              <span className="stat-label">Suhbatlar</span>
-            </div>
-            <div className="stat-item">
-              <div className="icon-circle green"><FaCalendarAlt /></div>
-              <span className="stat-value date-val">
-                {new Date(profileData?.created_at).toLocaleDateString()}
-              </span>
-              <span className="stat-label">Qo'shilgan</span>
-            </div>
-          </div>
-
-          {/* LOGOUT */}
-          {isMyProfile && (
-            <div className="action-area">
-              <button onClick={logout} className="btn-logout">
-                <FaSignOutAlt /> Tizimdan Chiqish
-              </button>
-            </div>
-          )}
-
-        </div>
+        )}
       </main>
 
-      {/* --- EDIT MODAL --- */}
+      {/* MODAL */}
       {showEditModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -272,10 +283,10 @@ export default function Profile() {
 
       <Navbar user={currentUser} />
 
-      {/* --- STYLES --- */}
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto:wght@400;500&display=swap');
-        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif; }
+        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif;  /* Mobil scroll effektini yumshatish */
+          -webkit-tap-highlight-color: transparent; }
       `}</style>
 
       <style jsx>{`
@@ -285,8 +296,6 @@ export default function Profile() {
           position: relative;
           overflow-x: hidden;
         }
-
-        .center-screen { display: flex; align-items: center; justify-content: center; height: 100vh; }
         
         .bg-glow {
           position: absolute; top: -100px; left: 50%; transform: translateX(-50%);
@@ -302,7 +311,6 @@ export default function Profile() {
           position: relative; z-index: 1;
         }
 
-        /* CARD */
         .card {
           width: 100%; max-width: 500px;
           background: rgba(23, 33, 48, 0.85);
@@ -315,6 +323,18 @@ export default function Profile() {
           animation: slideUp 0.5s ease;
         }
 
+        /* SKELETON LOADING STYLES */
+        .skeleton-card {
+          padding: 40px 20px;
+          display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
+        .sk-avatar { width: 110px; height: 110px; border-radius: 50%; background: rgba(255,255,255,0.05); }
+        .sk-line { height: 20px; background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .w-50 { width: 50%; }
+        .w-30 { width: 30%; }
+        .sk-stats { display: flex; gap: 10px; width: 100%; justify-content: center; margin-top: 20px; }
+        .sk-box { width: 30%; height: 80px; background: rgba(255,255,255,0.05); border-radius: 10px; }
+        
         /* HEADER */
         .profile-header {
           padding: 30px 20px;
@@ -330,13 +350,11 @@ export default function Profile() {
           position: relative;
           box-shadow: 0 0 20px rgba(207, 171, 86, 0.3);
         }
-
         .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
         .avatar-placeholder { 
           width: 100%; height: 100%; border-radius: 50%; background: #2d3b55; 
           display: flex; align-items: center; justify-content: center; font-size: 40px; color: #cfab56; font-weight: bold;
         }
-
         .edit-avatar-btn {
           position: absolute; bottom: 0; right: 0;
           background: #cfab56; color: #000;
@@ -366,14 +384,12 @@ export default function Profile() {
           display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;
           padding: 20px;
         }
-
         .stat-item {
           background: rgba(11, 17, 32, 0.6);
           border-radius: 12px; padding: 15px 5px;
           display: flex; flex-direction: column; align-items: center;
           border: 1px solid rgba(255,255,255,0.05);
         }
-
         .icon-circle {
           width: 35px; height: 35px; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
@@ -382,12 +398,10 @@ export default function Profile() {
         .gold { background: rgba(207, 171, 86, 0.2); color: #cfab56; }
         .blue { background: rgba(74, 163, 223, 0.2); color: #4aa3df; }
         .green { background: rgba(0, 255, 170, 0.2); color: #00ffaa; }
-
         .stat-value { font-family: 'Rajdhani', sans-serif; font-size: 20px; font-weight: bold; color: #fff; }
         .date-val { font-size: 16px; }
         .stat-label { font-size: 11px; color: #8899ac; text-transform: uppercase; margin-top: 2px; }
 
-        /* BUTTONS */
         .action-area { padding: 0 20px 25px 20px; }
         .btn-logout {
           width: 100%; padding: 14px;
@@ -405,7 +419,6 @@ export default function Profile() {
           display: flex; align-items: center; justify-content: center;
           backdrop-filter: blur(5px);
         }
-
         .modal {
           background: #17212b; width: 90%; max-width: 400px;
           border-radius: 16px; padding: 25px;
@@ -413,7 +426,6 @@ export default function Profile() {
           box-shadow: 0 0 30px rgba(207, 171, 86, 0.2);
           animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-header h3 { margin: 0; color: #cfab56; font-family: 'Rajdhani', sans-serif; }
         .modal-header button { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
@@ -437,7 +449,6 @@ export default function Profile() {
         .input-group input {
           width: 100%; padding: 12px; background: #0b1120; border: 1px solid #2d3b55;
           border-radius: 8px; color: #fff; outline: none; margin-bottom: 20px; font-size: 16px;
-          box-sizing: border-box;
         }
         .input-group input:focus { border-color: #cfab56; }
 
@@ -446,15 +457,8 @@ export default function Profile() {
           color: #000; font-weight: bold; border-radius: 8px; cursor: pointer;
         }
 
-        .spinner {
-          width: 40px; height: 40px; border: 4px solid rgba(207, 171, 86, 0.3);
-          border-top-color: #cfab56; border-radius: 50%;
-          animation: spin 1s infinite linear;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
       `}</style>
     </div>
   )
