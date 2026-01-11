@@ -3,13 +3,13 @@ import { supabase } from '../lib/supabaseClient';
 import { 
   FaPaperPlane, FaPaperclip, FaArrowLeft, FaEllipsisV, 
   FaCheck, FaCheckDouble, FaUserAstronaut, FaTimes, FaPlay, 
-  FaTrash, FaPen, FaReply, FaCopy, FaDownload, FaSmile 
+  FaTrash, FaPen, FaReply, FaCopy, FaSmile, FaMicrophone, FaStop 
 } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // --- SOUNDS ---
-const SEND_SOUND = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA//OEAAAAAAAAAAAAAAAAAAAAAAAAMGluZv////8AAAAAAAEgAAAAP8Y9JgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA';
+const SEND_SOUND = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA//OEAAAAAAAAAAAAAAAAAAAAAAAAMGluZv////8AAAAAAAEgAAAAP8Y9JgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA';
 
 // --- CATBOX UPLOAD ---
 const uploadToCatbox = (file, onProgress) => {
@@ -37,7 +37,6 @@ const uploadToCatbox = (file, onProgress) => {
   });
 };
 
-// --- STICKERS LIST ---
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🔥", "🎉", "💩"];
 
 export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
@@ -45,21 +44,24 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   const [chatInfo, setChatInfo] = useState(null);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [subscribersCount, setSubscribersCount] = useState(0);
   const [onlineUsers, setOnlineUsers] = useState(new Set());
   const [isSending, setIsSending] = useState(false);
   
-  // Media States
+  // Media & Voice
   const [selectedFiles, setSelectedFiles] = useState([]); 
   const [showPreview, setShowPreview] = useState(false); 
   const [uploadQueue, setUploadQueue] = useState({}); 
   const [mediaZoom, setMediaZoom] = useState(null); 
   
-  // Interaction States
+  const [isRecording, setIsRecording] = useState(false);
+  const [recorder, setRecorder] = useState(null);
+  const [audioChunks, setAudioChunks] = useState([]);
+
+  // Interaction
   const [contextMenu, setContextMenu] = useState(null); 
   const [replyTo, setReplyTo] = useState(null); 
   const [editingMsg, setEditingMsg] = useState(null); 
-  const [showReactionPicker, setShowReactionPicker] = useState(false); // Sticker picker
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -67,18 +69,20 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   const longPressTimer = useRef(null);
   const inputRef = useRef(null);
 
-  // 1. INITIAL LOAD & REALTIME
+  // --- INITIALIZATION ---
   useEffect(() => {
     if (!chatId) return;
     setLoading(true);
     fetchChatDetails();
     fetchMessages();
 
+    // Realtime channel
     const channel = supabase.channel(`room:${chatId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `room_id=eq.${chatId}` }, 
       (payload) => handleRealtimeEvent(payload))
       .subscribe();
 
+    // Presence channel
     const presenceChannel = supabase.channel(`presence:${chatId}`)
       .on('presence', { event: 'sync' }, () => {
         const state = presenceChannel.presenceState();
@@ -99,24 +103,27 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   }, [chatId]);
 
   useEffect(() => {
-    if (!editingMsg) messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!editingMsg) scrollToBottom();
     if (messages.length > 0) markMessagesAsRead();
   }, [messages, uploadQueue]);
+
+  const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   // --- API CALLS ---
   const fetchChatDetails = async () => {
     const { data: room } = await supabase.from('rooms').select('*').eq('id', chatId).single();
-    if (room?.type === 'private') {
-       const { data: partner } = await supabase.from('room_participants')
-        .select('users(username, id)').eq('room_id', chatId).neq('user_id', currentUser.id).single();
-       if (partner?.users) {
-         room.name = partner.users.username;
-         room.partnerId = partner.users.id;
-       }
+    if (room) {
+      if (room.type === 'private') {
+        const { data: partner } = await supabase.from('room_participants')
+          .select('users(username, id, avatar_url)').eq('room_id', chatId).neq('user_id', currentUser.id).single();
+        if (partner?.users) {
+          room.name = partner.users.username;
+          room.partnerId = partner.users.id;
+          room.image_url = partner.users.avatar_url; // Private chat rasm
+        }
+      }
+      setChatInfo(room);
     }
-    const { count } = await supabase.from('room_participants').select('*', { count: 'exact', head: true }).eq('room_id', chatId);
-    setChatInfo(room);
-    setSubscribersCount(count || 0);
   };
 
   const fetchMessages = async () => {
@@ -134,7 +141,6 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
     if (unreadIds.length > 0) await supabase.from('messages').update({ is_read: true }).in('id', unreadIds);
   };
 
-  // --- REALTIME HANDLER ---
   const handleRealtimeEvent = async (payload) => {
     const { eventType, new: newMsg, old: oldMsg } = payload;
     if (eventType === 'INSERT') {
@@ -148,7 +154,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         return [...prev, newMsg];
       });
     } else if (eventType === 'UPDATE') {
-      setMessages(prev => prev.map(m => m.id === newMsg.id ? { ...m, ...newMsg, sender: m.sender } : m));
+      setMessages(prev => prev.map(m => m.id === newMsg.id ? { ...m, ...newMsg, sender: m.sender || prev.find(pm => pm.id === newMsg.id)?.sender } : m));
     } else if (eventType === 'DELETE') {
       setMessages(prev => prev.filter(m => m.id !== oldMsg.id));
     }
@@ -161,180 +167,208 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
     }
   };
 
-  // --- ACTIONS ---
+  // --- VOICE RECORDING ---
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const newRecorder = new MediaRecorder(stream);
+      setRecorder(newRecorder);
+      setAudioChunks([]);
+
+      newRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) setAudioChunks((prev) => [...prev, e.data]);
+      };
+
+      newRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      toast.error("Mikrofonga ruxsat berilmadi!");
+    }
+  };
+
+  const stopRecording = () => {
+    if (recorder) {
+      recorder.stop();
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+        const audioFile = new File([audioBlob], "voice_message.mp3", { type: 'audio/mp3' });
+        await sendFileMessage(audioFile, 'voice');
+        setIsRecording(false);
+        setAudioChunks([]);
+      };
+    }
+  };
+
+  // --- SENDING LOGIC ---
   const handleSend = async () => {
-    if (isSending) return; 
+    if (isSending) return;
     if (selectedFiles.length === 0 && !newMessage.trim()) return;
 
     if (editingMsg) {
       const { error } = await supabase.from('messages').update({ content: newMessage }).eq('id', editingMsg.id);
-      if (error) toast.error("Tahrirlashda xatolik!");
+      if (error) toast.error("Xatolik!");
       else { setEditingMsg(null); setNewMessage(''); }
       return;
     }
 
     setIsSending(true);
-    const caption = newMessage;
+    const textToSend = newMessage;
     setNewMessage('');
     setShowPreview(false);
-    setSelectedFiles([]);
     
-    // Reply ma'lumotlarini nusxalash
     const currentReply = replyTo ? { ...replyTo } : null;
-    setReplyTo(null); // Darhol tozalash, UI yangilanishi uchun
+    setReplyTo(null);
 
-    playSound();
-
-    // 1. Matn xabar
+    // 1. Text Message
     if (selectedFiles.length === 0) {
-      const tempId = Date.now();
-      const optimistic = {
-        id: tempId, tempId, content: caption, sender_id: currentUser.id,
-        created_at: new Date().toISOString(), sender: { username: currentUser.username },
-        is_read: false, status: 'sending', reply_to_id: currentReply?.id, reactions: {}
-      };
-      setMessages(prev => [...prev, optimistic]);
+      await sendSingleMessage(textToSend, null, null, currentReply);
+    } 
+    // 2. Media Messages
+    else {
+      // Rasmlarni yuborish
+      const filesToSend = [...selectedFiles];
+      setSelectedFiles([]);
       
-      const success = await sendSingleMessage(caption, null, null, tempId, currentReply);
-      if (!success) setMessages(prev => prev.filter(m => m.tempId !== tempId));
-      setIsSending(false);
-      return;
-    }
-
-    // 2. Media xabarlar
-    for (let index = 0; index < selectedFiles.length; index++) {
-      const file = selectedFiles[index];
-      const isLast = index === selectedFiles.length - 1;
-      const fileType = file.type.startsWith('video') ? 'video' : 'image';
-      const tempId = Date.now() + Math.random();
-
-      const optimistic = {
-        id: tempId, tempId, content: isLast ? caption : '', sender_id: currentUser.id,
-        created_at: new Date().toISOString(), sender: { username: currentUser.username },
-        file_url: URL.createObjectURL(file), file_type: fileType,
-        is_read: false, status: 'uploading', reply_to_id: isLast ? currentReply?.id : null, reactions: {}
-      };
-
-      setMessages(prev => [...prev, optimistic]);
-      setUploadQueue(prev => ({ ...prev, [tempId]: 0 }));
-
-      try {
-        const url = await uploadToCatbox(file, (percent) => setUploadQueue(prev => ({ ...prev, [tempId]: percent })));
-        await sendSingleMessage(isLast ? caption : '', url, fileType, tempId, isLast ? currentReply : null);
-      } catch (error) {
-        toast.error(`Yuklanmadi: ${file.name}`);
-        setMessages(prev => prev.filter(m => m.tempId !== tempId));
-      } finally {
-        setUploadQueue(prev => { const n = { ...prev }; delete n[tempId]; return n; });
+      // Har bir fayl uchun alohida so'rov
+      for (let i = 0; i < filesToSend.length; i++) {
+        const file = filesToSend[i];
+        const isLast = i === filesToSend.length - 1;
+        const caption = isLast ? textToSend : ''; // Izoh faqat oxirgisiga
+        
+        const fileType = file.type.startsWith('video') ? 'video' : 'image';
+        await sendFileMessage(file, fileType, caption, isLast ? currentReply : null);
       }
     }
+
     setIsSending(false);
+    playSound();
   };
 
-  const sendSingleMessage = async (content, fileUrl, fileType, tempId, replyObj) => {
-    const payload = {
-      room_id: chatId,
-      sender_id: currentUser.id,
-      content: content ? content.trim() : '',
-      file_url: fileUrl,
-      file_type: fileType,
-      is_read: false,
-      reply_to_id: replyObj ? replyObj.id : null,
-      reactions: {} // Yangi ustun uchun bo'sh obyekt
+  const sendFileMessage = async (file, type, caption = '', replyObj = null) => {
+    const tempId = Date.now() + Math.random();
+    
+    // Optimistic UI
+    const optimistic = {
+      id: tempId, tempId, content: caption, sender_id: currentUser.id,
+      created_at: new Date().toISOString(), sender: { username: currentUser.username },
+      file_url: URL.createObjectURL(file), file_type: type,
+      is_read: false, status: 'uploading', reply_to_id: replyObj?.id, reactions: {}
     };
+    setMessages(prev => [...prev, optimistic]);
+    setUploadQueue(prev => ({ ...prev, [tempId]: 0 }));
 
     try {
-      const { data, error } = await supabase.from('messages').insert([payload]).select().single();
-      if (error) { console.error(error); return false; }
-      if (data && tempId) {
+      const url = await uploadToCatbox(file, (percent) => setUploadQueue(prev => ({ ...prev, [tempId]: percent })));
+      const { data, error } = await supabase.from('messages').insert([{
+        room_id: chatId,
+        sender_id: currentUser.id,
+        content: caption,
+        file_url: url,
+        file_type: type,
+        is_read: false,
+        reply_to_id: replyObj?.id,
+        reactions: {}
+      }]).select().single();
+
+      if (data) {
         setMessages(prev => prev.map(m => m.tempId === tempId ? { ...data, sender: { username: currentUser.username } } : m));
-      }
-      return true;
-    } catch (err) { return false; }
-  };
+      } else throw error;
 
-  const deleteMessage = async () => {
-    if (!contextMenu?.msg) return;
-    if (contextMenu.msg.sender_id !== currentUser.id) {
-       toast.error("Faqat o'z xabaringizni o'chira olasiz!");
-       setContextMenu(null);
-       return;
+    } catch (error) {
+      toast.error("Yuklashda xatolik!");
+      setMessages(prev => prev.filter(m => m.tempId !== tempId));
+    } finally {
+      setUploadQueue(prev => { const n = { ...prev }; delete n[tempId]; return n; });
     }
-    const { error } = await supabase.from('messages').delete().eq('id', contextMenu.msg.id);
-    if (!error) setMessages(prev => prev.filter(m => m.id !== contextMenu.msg.id));
-    else toast.error("Xatolik yuz berdi");
-    setContextMenu(null);
   };
 
-  // --- REACTION LOGIC ---
+  const sendSingleMessage = async (content, fileUrl, fileType, replyObj) => {
+    const { error } = await supabase.from('messages').insert([{
+      room_id: chatId, sender_id: currentUser.id, content: content,
+      file_url: fileUrl, file_type: fileType, is_read: false,
+      reply_to_id: replyObj?.id, reactions: {}
+    }]);
+    if (error) toast.error("Xabar ketmadi!");
+  };
+
+  // --- REACTION & DELETE ---
   const handleReaction = async (emoji) => {
     const msg = contextMenu?.msg;
     if (!msg) return;
 
-    // Current reactions
     const currentReactions = msg.reactions || {};
-    const userReacted = currentReactions[emoji]?.includes(currentUser.id);
-
+    // User oldin boshqa reaksiyani bosgan bo'lsa o'chirish
     let newReactions = { ...currentReactions };
     
-    if (userReacted) {
-      // Remove reaction
-      newReactions[emoji] = newReactions[emoji].filter(id => id !== currentUser.id);
-      if (newReactions[emoji].length === 0) delete newReactions[emoji];
-    } else {
-      // Add reaction (remove other reactions from this user if needed, or allow multiple)
-      // Biz bitta userga bitta emojiga ruxsat beramiz.
+    // Hamma joydan userni o'chiramiz (faqat bitta reaksiya mumkin)
+    Object.keys(newReactions).forEach(key => {
+      newReactions[key] = newReactions[key].filter(id => id !== currentUser.id);
+      if(newReactions[key].length === 0) delete newReactions[key];
+    });
+
+    // Yangi reaksiyani qo'shamiz (agar oldin bosmagan bo'lsa)
+    const wasReacted = currentReactions[emoji]?.includes(currentUser.id);
+    if (!wasReacted) {
       if (!newReactions[emoji]) newReactions[emoji] = [];
       newReactions[emoji].push(currentUser.id);
     }
 
-    // Optimistic update
     setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, reactions: newReactions } : m));
     setContextMenu(null);
-
-    // Backend update
     await supabase.from('messages').update({ reactions: newReactions }).eq('id', msg.id);
   };
 
-  const startEdit = () => {
+  const deleteMessage = async () => {
     if (!contextMenu?.msg) return;
+    await supabase.from('messages').delete().eq('id', contextMenu.msg.id);
+    setMessages(prev => prev.filter(m => m.id !== contextMenu.msg.id));
+    setContextMenu(null);
+  };
+
+  const startEdit = () => {
     setEditingMsg(contextMenu.msg);
     setNewMessage(contextMenu.msg.content || '');
     setContextMenu(null);
-    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
   const startReply = () => {
-    if (!contextMenu?.msg) return;
     setReplyTo(contextMenu.msg);
     setContextMenu(null);
-    setTimeout(() => inputRef.current?.focus(), 100);
   };
 
-  // --- CONTEXT MENU HANDLERS ---
-  const handleContextMenu = (e, msg) => {
-    e.preventDefault();
-    if (isMobile) return; 
-    setContextMenu({ x: e.pageX, y: e.pageY, msg, type: 'desktop' });
+  // --- HELPER FOR GROUPING ---
+  const getMessageGroups = () => {
+    const groups = [];
+    let currentGroup = [];
+
+    messages.forEach((msg, index) => {
+      const prevMsg = messages[index - 1];
+      
+      // Group logic: Same sender, same minute, both consist of media (image/video)
+      const isMedia = msg.file_type === 'image' || msg.file_type === 'video';
+      const isPrevMedia = prevMsg?.file_type === 'image' || prevMsg?.file_type === 'video';
+      const sameSender = prevMsg && prevMsg.sender_id === msg.sender_id;
+      const timeDiff = prevMsg ? (new Date(msg.created_at) - new Date(prevMsg.created_at)) / 1000 : 999;
+
+      if (isMedia && isPrevMedia && sameSender && timeDiff < 60 && currentGroup.length > 0) {
+        currentGroup.push(msg);
+      } else {
+        if (currentGroup.length > 0) groups.push({ type: 'group', msgs: currentGroup });
+        if (isMedia) {
+           currentGroup = [msg];
+        } else {
+           groups.push({ type: 'single', msg });
+           currentGroup = [];
+        }
+      }
+    });
+    if (currentGroup.length > 0) groups.push({ type: 'group', msgs: currentGroup });
+    return groups;
   };
 
-  const handleTouchStart = (e, msg) => {
-    if (!isMobile) return;
-    longPressTimer.current = setTimeout(() => {
-      setContextMenu({ msg, type: 'mobile' });
-      if (navigator.vibrate) navigator.vibrate(50);
-    }, 500); 
-  };
-
-  const handleTouchEnd = () => clearTimeout(longPressTimer.current);
-  const getReplyMessage = (id) => messages.find(m => m.id === id);
+  // --- RENDER HELPERS ---
   const isPartnerOnline = chatInfo?.type === 'private' && onlineUsers.has(chatInfo.partnerId);
-
-  // --- RENDER ---
-  if (!chatId) return <div className="placeholder"><div className="bubble">Chatni tanlang</div></div>;
-  const isChannel = chatInfo?.type === 'channel';
-  const isOwner = chatInfo?.owner_id === currentUser.id;
-  const canWrite = !isChannel || isOwner;
+  const groupedMessages = getMessageGroups();
 
   return (
     <div className={`chat-window telegram-bg ${isMobile ? 'mobile-window' : ''}`} onClick={() => setContextMenu(null)}>
@@ -346,15 +380,15 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         <div className="header-left">
           {isMobile && <button onClick={onBack} className="back-btn"><FaArrowLeft /></button>}
           <div className="avatar">
-            {chatInfo?.name?.[0]?.toUpperCase() || <FaUserAstronaut />}
+            {chatInfo?.image_url ? <img src={chatInfo.image_url} alt="ava" /> : (chatInfo?.name?.[0] || <FaUserAstronaut />)}
           </div>
           <div className="info">
             <h3>{chatInfo?.name || '...'}</h3>
             <p className={isPartnerOnline ? 'status-online' : ''}>
               {loading ? '...' : (
-                chatInfo?.type === 'private' 
-                ? (isPartnerOnline ? 'online' : 'yaqinda kirgan') 
-                : (isChannel ? `${subscribersCount} obunachi` : `${subscribersCount} a'zo`)
+                 chatInfo?.type === 'private' 
+                 ? (isPartnerOnline ? 'online' : 'yaqinda kirgan') 
+                 : (chatInfo?.type === 'channel' ? 'Kanal' : 'Guruh')
               )}
             </p>
           </div>
@@ -366,108 +400,64 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
       <div className="messages-area">
         {loading && <div className="spinner-center"><span className="loader"></span></div>}
         
-        {messages.map((msg) => {
-          const isMyMsg = msg.sender_id === currentUser.id;
-          const showName = !isMyMsg && (chatInfo?.type === 'group' || isChannel);
-          const uploadProgress = msg.tempId ? uploadQueue[msg.tempId] : null;
-          const repliedMsg = msg.reply_to_id ? getReplyMessage(msg.reply_to_id) : null;
-          
-          // Reactions Count
-          const reactions = msg.reactions || {};
-          const hasReactions = Object.keys(reactions).length > 0;
-
-          return (
-            <div 
-              key={msg.id || msg.tempId} 
-              className={`message-row ${isMyMsg ? 'my-row' : 'other-row'}`}
-              onContextMenu={(e) => handleContextMenu(e, msg)}
-              onTouchStart={(e) => handleTouchStart(e, msg)}
-              onTouchEnd={handleTouchEnd}
-            >
-              <div className="bubble">
-                {showName && <span className="sender-name">{msg.sender?.username}</span>}
-                
-                {/* REPLY PREVIEW */}
-                {repliedMsg && (
-                  <div className="reply-preview-in-msg" onClick={() => document.getElementById(repliedMsg.id)?.scrollIntoView({ behavior: 'smooth' })}>
-                    <div className="reply-line"></div>
-                    <div className="reply-content-box">
-                      <span className="reply-sender-name">{repliedMsg.sender?.username}</span>
-                      <span className="reply-text-truncate">
-                        {repliedMsg.file_type ? (repliedMsg.file_type === 'video' ? '🎥 Video' : '📷 Rasm') : repliedMsg.content}
-                      </span>
+        {groupedMessages.map((group, gIdx) => {
+          if (group.type === 'single') {
+            return <MessageBubble key={group.msg.id || group.msg.tempId} msg={group.msg} currentUser={currentUser} onContext={setContextMenu} uploadQueue={uploadQueue} setMediaZoom={setMediaZoom} />;
+          } else {
+            // MEDIA GRID
+            const isMyGroup = group.msgs[0].sender_id === currentUser.id;
+            return (
+              <div key={gIdx} className={`media-group-row ${isMyGroup ? 'my-row' : 'other-row'}`}>
+                 <div className="media-grid-bubble">
+                    <div className={`media-grid count-${Math.min(group.msgs.length, 4)}`}>
+                      {group.msgs.map(m => (
+                        <div key={m.id || m.tempId} className="media-grid-item" onClick={() => setMediaZoom({url: m.file_url, type: m.file_type})}>
+                           {m.file_type === 'video' ? <video src={m.file_url} className="grid-video" /> : <img src={m.file_url} className="grid-img" />}
+                           {m.status === 'uploading' && <div className="upload-overlay"><span className="percent-text">{uploadQueue[m.tempId]}%</span></div>}
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                )}
-
-                {/* MEDIA */}
-                {msg.file_url && (
-                  <div className="media-container" onClick={() => !msg.status && setMediaZoom({ url: msg.file_url, type: msg.file_type })}>
-                    {msg.status === 'uploading' && (
-                      <div className="upload-overlay">
-                        <div className="progress-ring"><span className="percent-text">{uploadProgress || 0}%</span></div>
-                      </div>
+                    {/* Caption for the last item in group if exists */}
+                    {group.msgs[group.msgs.length-1].content && (
+                       <p className="grid-caption">{group.msgs[group.msgs.length-1].content}</p>
                     )}
-                    {msg.file_type === 'video' ? (
-                      <div className="video-wrapper">
-                         <video src={msg.file_url} className={msg.status === 'uploading' ? 'blur-media' : ''} />
-                         <div className="play-overlay"><FaPlay /></div>
-                      </div>
-                    ) : (
-                      <img src={msg.file_url} alt="media" className={msg.status === 'uploading' ? 'blur-media' : ''} />
-                    )}
-                  </div>
-                )}
-
-                {msg.content && <p className="content">{msg.content}</p>}
-
-                {/* REACTIONS DISPLAY */}
-                {hasReactions && (
-                  <div className="reactions-row">
-                    {Object.entries(reactions).map(([emoji, userIds]) => (
-                      <span key={emoji} className={`reaction-pill ${userIds.includes(currentUser.id) ? 'my-reaction' : ''}`}>
-                        {emoji} {userIds.length > 1 && <span className="count">{userIds.length}</span>}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                <div className="meta">
-                  <span className="time">
-                    {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                  </span>
-                  {isMyMsg && (
-                    <span className="checks">
-                       {msg.status === 'uploading' || msg.status === 'sending' ? '🕒' : (msg.is_read ? <FaCheckDouble className="read" /> : <FaCheck />)}
-                    </span>
-                  )}
-                </div>
+                    <div className="grid-meta">
+                       <span className="time">{new Date(group.msgs[0].created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                    </div>
+                 </div>
               </div>
-            </div>
-          );
+            );
+          }
         })}
         <div ref={messagesEndRef} />
       </div>
 
       {/* FOOTER */}
-      {canWrite ? (
-        <div className="footer-modern">
-          {/* REPLY / EDIT BAR */}
-          {(replyTo || editingMsg) && (
-            <div className="reply-bar-floating">
-              <div className="reply-icon-box">{editingMsg ? <FaPen /> : <FaReply />}</div>
-              <div className="reply-info-box">
-                <span className="reply-title">{editingMsg ? 'Tahrirlash' : `Javob: ${replyTo?.sender?.username}`}</span>
-                <p className="reply-subtitle">{editingMsg ? editingMsg.content : (replyTo.content || 'Media fayl')}</p>
-              </div>
-              <button className="close-reply-btn" onClick={() => { setReplyTo(null); setEditingMsg(null); setNewMessage(''); }}><FaTimes /></button>
-            </div>
-          )}
+      <div className="footer-modern">
+        {isRecording && (
+           <div className="recording-bar">
+              <span className="rec-dot"></span>
+              <span>Yozilmoqda...</span>
+              <button className="stop-rec-btn" onClick={stopRecording}><FaStop /></button>
+           </div>
+        )}
 
+        {(replyTo || editingMsg) && !isRecording && (
+          <div className="reply-bar-floating">
+            <div className="reply-icon-box">{editingMsg ? <FaPen /> : <FaReply />}</div>
+            <div className="reply-info-box">
+              <span className="reply-title">{editingMsg ? 'Tahrirlash' : `Javob: ${replyTo?.sender?.username}`}</span>
+              <p className="reply-subtitle">{editingMsg ? editingMsg.content : (replyTo.content || 'Media fayl')}</p>
+            </div>
+            <button className="close-reply-btn" onClick={() => { setReplyTo(null); setEditingMsg(null); setNewMessage(''); }}><FaTimes /></button>
+          </div>
+        )}
+
+        {!isRecording && (
           <div className="input-area-modern">
             <button className="attach-btn" onClick={() => fileInputRef.current.click()}><FaPaperclip /></button>
             <input 
-              type="file" multiple accept="image/*,video/mp4,video/webm,video/ogg,video/quicktime,video/x-matroska"
+              type="file" multiple accept="image/*,video/*"
               ref={fileInputRef} style={{display: 'none'}} 
               onChange={(e) => {
                 const files = Array.from(e.target.files);
@@ -484,9 +474,6 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
               placeholder="Xabar yozing..." 
               className="modern-input"
               rows={1}
-              onKeyDown={(e) => {
-                if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
-              }}
             />
             
             {newMessage || selectedFiles.length > 0 ? (
@@ -494,71 +481,26 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
                 {isSending ? <span className="loader-mini"></span> : <FaPaperPlane />}
               </button>
             ) : (
-              <button className="sticker-btn" onClick={() => setShowReactionPicker(!showReactionPicker)}><FaSmile /></button>
+              <button className="voice-btn" onClick={startRecording}><FaMicrophone /></button>
             )}
           </div>
-        </div>
-      ) : null}
+        )}
+      </div>
 
-      {/* STICKER PICKER (BASIC) */}
-      {showReactionPicker && (
-        <div className="emoji-picker-popover">
-           {REACTION_EMOJIS.map(emoji => (
-             <span key={emoji} onClick={() => setNewMessage(prev => prev + emoji)}>{emoji}</span>
-           ))}
-        </div>
+      {/* MODALS & MENUS */}
+      {contextMenu && (
+        <ContextMenu 
+           contextMenu={contextMenu} currentUser={currentUser} 
+           onReaction={handleReaction} onDelete={deleteMessage} 
+           onReply={startReply} onEdit={startEdit} onClose={() => setContextMenu(null)} 
+        />
       )}
 
-      {/* CONTEXT MENUS */}
-      {contextMenu?.type === 'desktop' && (
-        <div className="context-menu" style={{ top: Math.min(contextMenu.y, window.innerHeight - 200), left: Math.min(contextMenu.x, window.innerWidth - 180) }}>
-          <div className="reaction-row">
-             {REACTION_EMOJIS.slice(0,5).map(e => <span key={e} onClick={() => handleReaction(e)}>{e}</span>)}
-          </div>
-          <div className="menu-divider"></div>
-          <div className="menu-item" onClick={startReply}><FaReply /> Javob berish</div>
-          <div className="menu-item" onClick={() => { navigator.clipboard.writeText(contextMenu.msg.content); setContextMenu(null); }}><FaCopy /> Nusxalash</div>
-          {contextMenu.msg.sender_id === currentUser.id && (
-            <>
-              <div className="menu-item" onClick={startEdit}><FaPen /> Tahrirlash</div>
-              <div className="menu-item delete" onClick={deleteMessage}><FaTrash /> O'chirish</div>
-            </>
-          )}
-        </div>
-      )}
-
-      {contextMenu?.type === 'mobile' && (
-        <div className="mobile-sheet-overlay" onClick={() => setContextMenu(null)}>
-          <div className="mobile-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-handle"></div>
-            
-            {/* REACTIONS IN SHEET */}
-            <div className="sheet-reactions">
-               {REACTION_EMOJIS.map(e => (
-                 <button key={e} className="sheet-emoji-btn" onClick={() => handleReaction(e)}>{e}</button>
-               ))}
-            </div>
-
-            <div className="sheet-item" onClick={startReply}><FaReply /> Javob berish</div>
-            <div className="sheet-item" onClick={() => { navigator.clipboard.writeText(contextMenu.msg.content); setContextMenu(null); }}><FaCopy /> Nusxalash</div>
-            {contextMenu.msg.sender_id === currentUser.id ? (
-              <>
-                 <div className="sheet-item" onClick={startEdit}><FaPen /> Tahrirlash</div>
-                 <div className="sheet-item delete-item" onClick={deleteMessage}><FaTrash /> O'chirish</div>
-              </>
-            ) : (
-                 <div className="sheet-item disabled"><FaTrash /> O'chirish (ruxsat yo'q)</div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* PREVIEW MODAL */}
       {showPreview && (
         <div className="modal-overlay">
           <div className="preview-container-new">
             <div className="preview-top-bar">
-              <span>Tanlanganlar ({selectedFiles.length})</span>
+              <span>{selectedFiles.length} ta fayl</span>
               <button onClick={() => {setShowPreview(false); setSelectedFiles([]);}}><FaTimes /></button>
             </div>
             <div className="preview-content-scroll">
@@ -566,11 +508,9 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
                 {selectedFiles.map((f, i) => (
                   <div key={i} className="preview-card">
                     <button className="remove-preview-btn" onClick={() => {
-                      const n = [...selectedFiles]; n.splice(i,1); 
-                      setSelectedFiles(n); if(n.length===0) setShowPreview(false);
+                      const n = [...selectedFiles]; n.splice(i,1); setSelectedFiles(n); if(n.length===0) setShowPreview(false);
                     }}><FaTimes /></button>
-                    {f.type.startsWith('video') ? <video src={URL.createObjectURL(f)} controls /> : <img src={URL.createObjectURL(f)} />}
-                    <div className="preview-name">{f.name}</div>
+                    {f.type.startsWith('video') ? <video src={URL.createObjectURL(f)} /> : <img src={URL.createObjectURL(f)} />}
                   </div>
                 ))}
                </div>
@@ -583,7 +523,6 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         </div>
       )}
 
-      {/* LIGHTBOX */}
       {mediaZoom && (
         <div className="lightbox" onClick={() => setMediaZoom(null)}>
           <div className="lightbox-content" onClick={e => e.stopPropagation()}>
@@ -594,155 +533,176 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
       )}
 
       <style jsx>{`
-        /* GLOBAL RESET */
-        :global(body) { overscroll-behavior: none; background: #0e1621;  /* Mobil scroll effektini yumshatish */
-          -webkit-tap-highlight-color: transparent;}
-        .chat-window { 
-          display: flex; flex-direction: column; height: 100vh; 
-          background-color: #0e1621; background-image: url("https://web.telegram.org/img/bg_0.png"); 
-          background-size: cover; position: relative; overflow: hidden;
-        }
+        /* --- STYLES --- */
+        :global(body) { overscroll-behavior: none; background: #0e1621; -webkit-tap-highlight-color: transparent;}
+        .chat-window { display: flex; flex-direction: column; height: 100vh; background: #0e1621; background-image: url("https://web.telegram.org/img/bg_0.png"); background-size: cover; }
         .mobile-window { height: 100dvh; width: 100vw; position: fixed; top: 0; left: 0; }
-
+        
         /* HEADER */
-        .glass-header {
-          flex: 0 0 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px;
-          background: #17212b; border-bottom: 1px solid #000; z-index: 10;
-        }
+        .glass-header { flex: 0 0 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; background: #17212b; border-bottom: 1px solid #000; z-index: 10; }
         .header-left { display: flex; align-items: center; gap: 10px; }
-        .avatar { 
-          width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #cfab56, #a67c2e);
-          color: #000; display: flex; align-items: center; justify-content: center; font-size: 18px; 
-        }
-        .info h3 { margin: 0; color: #fff; font-size: 16px; font-weight: 600; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #cfab56; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .info h3 { margin: 0; color: #fff; font-size: 16px; }
         .info p { margin: 0; font-size: 12px; color: #8899ac; }
-        .status-online { color: #4aa3df; font-weight: bold; }
+        .status-online { color: #4aa3df; }
         .menu-btn, .back-btn { background: none; border: none; color: #8899ac; font-size: 20px; cursor: pointer; }
 
         /* MESSAGES */
-        .messages-area { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-        .message-row { display: flex; width: 100%; user-select: none; }
+        .messages-area { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+        .message-row, .media-group-row { display: flex; width: 100%; }
         .my-row { justify-content: flex-end; }
         .other-row { justify-content: flex-start; }
 
-        .bubble { 
-          max-width: 80%; padding: 6px 10px; border-radius: 12px; position: relative; font-size: 15px; 
-          box-shadow: 0 1px 2px rgba(0,0,0,0.3); min-width: 80px; 
-        }
-        .my-row .bubble { background: #2b5278; color: #fff; border-bottom-right-radius: 0; }
-        .other-row .bubble { background: #182533; color: #fff; border-bottom-left-radius: 0; }
+        /* BUBBLES */
+        .bubble { max-width: 80%; padding: 6px 10px; border-radius: 12px; position: relative; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.3); background: #182533; color: #fff; }
+        .my-row .bubble { background: #2b5278; border-bottom-right-radius: 0; }
+        .other-row .bubble { border-bottom-left-radius: 0; }
 
-        .sender-name { color: #cfab56; font-size: 12px; font-weight: bold; display: block; margin-bottom: 3px; }
-        .content { margin: 0; word-wrap: break-word; line-height: 1.4; white-space: pre-wrap; }
-
-        /* REPLY DISPLAY IN MSG */
-        .reply-preview-in-msg {
-          display: flex; gap: 8px; margin-bottom: 6px; cursor: pointer;
-          background: rgba(0,0,0,0.2); padding: 5px; border-radius: 4px; border-left: 3px solid #cfab56;
-        }
-        .reply-content-box { display: flex; flex-direction: column; overflow: hidden; justify-content: center; }
-        .reply-sender-name { font-size: 11px; color: #cfab56; font-weight: bold; }
-        .reply-text-truncate { font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
-
-        /* MEDIA */
-        .media-container { margin-bottom: 5px; border-radius: 8px; overflow: hidden; position: relative; width: fit-content; }
-        .media-container img, .media-container video { 
-           display: block; max-width: 100%; max-height: 350px; 
-           object-fit: cover; min-width: 150px; min-height: 150px;
-        }
-        .blur-media { filter: blur(5px); opacity: 0.6; }
-        .upload-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 2; }
-        .percent-text { font-weight: bold; color: #fff; text-shadow: 0 0 5px #000; }
-        .play-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 30px; color: #fff; background: rgba(0,0,0,0.5); border-radius: 50%; padding: 10px; }
-
-        /* REACTIONS */
-        .reactions-row { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
-        .reaction-pill { 
-          background: rgba(0,0,0,0.2); border-radius: 12px; padding: 2px 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 3px; border: 1px solid transparent; 
-        }
-        .my-reaction { background: rgba(111, 185, 246, 0.2); border-color: #6fb9f6; }
-        .count { font-size: 10px; font-weight: bold; }
-
-        /* FOOTER MODERN */
-        .footer-modern { background: #17212b; padding: 8px 10px; border-top: 1px solid #000; position: relative; }
+        /* MEDIA GRID (New Feature) */
+        .media-grid-bubble { max-width: 320px; background: transparent; padding: 2px; }
+        .media-grid { display: grid; gap: 2px; border-radius: 12px; overflow: hidden; }
+        .count-1 { grid-template-columns: 1fr; }
+        .count-2 { grid-template-columns: 1fr 1fr; }
+        .count-3 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .count-3 .media-grid-item:first-child { grid-row: span 2; }
+        .count-4 { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
         
-        .reply-bar-floating { 
-          position: absolute; bottom: 100%; left: 0; right: 0; background: #17212b; 
-          padding: 8px 15px; border-top: 1px solid #0e1621; display: flex; align-items: center; gap: 10px; animation: slideUp 0.2s;
-        }
-        .reply-icon-box { color: #cfab56; font-size: 18px; }
-        .reply-info-box { flex: 1; overflow: hidden; }
-        .reply-title { color: #cfab56; font-size: 13px; font-weight: bold; display: block; }
-        .reply-subtitle { color: #8899ac; font-size: 12px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .close-reply-btn { background: none; border: none; color: #6c7a89; font-size: 16px; padding: 5px; }
+        .media-grid-item { position: relative; cursor: pointer; height: 150px; }
+        .grid-img, .grid-video { width: 100%; height: 100%; object-fit: cover; }
+        .grid-caption { background: rgba(0,0,0,0.5); color: #fff; padding: 5px; border-radius: 0 0 8px 8px; margin: 0; font-size: 13px; }
+        .grid-meta { text-align: right; color: #ccc; font-size: 10px; padding-right: 5px; text-shadow: 0 1px 2px #000; }
+
+        /* VOICE MSG */
+        .voice-msg { display: flex; align-items: center; gap: 10px; padding: 5px 0; min-width: 200px; }
+        .voice-icon { font-size: 24px; color: #cfab56; }
+        .voice-player { flex: 1; height: 30px; }
+
+        /* FOOTER & RECORDER */
+        .footer-modern { background: #17212b; padding: 8px 10px; border-top: 1px solid #000; }
+        .recording-bar { display: flex; align-items: center; gap: 15px; color: #ff595a; padding: 10px; font-weight: bold; animation: pulse 1s infinite; }
+        .rec-dot { width: 12px; height: 12px; background: #ff595a; border-radius: 50%; }
+        .stop-rec-btn { margin-left: auto; background: none; border: 1px solid #ff595a; color: #ff595a; border-radius: 50%; padding: 5px; }
 
         .input-area-modern { display: flex; align-items: flex-end; gap: 8px; background: #0e1621; padding: 6px; border-radius: 20px; }
-        .attach-btn, .sticker-btn { background: none; border: none; color: #8899ac; font-size: 20px; padding: 10px; cursor: pointer; transition: 0.2s; }
-        .attach-btn:hover, .sticker-btn:hover { color: #cfab56; }
-        
-        .modern-input {
-          flex: 1; background: transparent; border: none; color: #fff; padding: 10px 5px; 
-          font-size: 16px; outline: none; resize: none; max-height: 100px; font-family: inherit;
-        }
-        
-        .send-btn-modern { 
-          width: 45px; height: 45px; background: #4aa3df; border-radius: 50%; border: none; 
-          color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-left: 5px;
-        }
-        .send-btn-modern:disabled { background: #2f3a4b; color: #8899ac; cursor: default; }
+        .attach-btn, .voice-btn { background: none; border: none; color: #8899ac; font-size: 20px; padding: 10px; cursor: pointer; }
+        .voice-btn:hover { color: #cfab56; }
+        .modern-input { flex: 1; background: transparent; border: none; color: #fff; padding: 10px 5px; font-size: 16px; outline: none; resize: none; max-height: 100px; }
+        .send-btn-modern { width: 45px; height: 45px; background: #4aa3df; border-radius: 50%; border: none; color: #fff; display: flex; align-items: center; justify-content: center; margin-left: 5px; }
 
-        /* STICKER PICKER */
-        .emoji-picker-popover {
-          position: absolute; bottom: 70px; right: 10px; background: #17212b; border: 1px solid #2d3b55;
-          padding: 10px; border-radius: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.5); font-size: 24px; z-index: 50;
-        }
-        .emoji-picker-popover span { cursor: pointer; padding: 5px; transition: 0.2s; }
-        .emoji-picker-popover span:hover { transform: scale(1.2); }
-
-        /* CONTEXT MENU */
-        .context-menu { 
-          position: fixed; background: #232e3c; border-radius: 8px; 
-          box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 9999; min-width: 180px; padding: 5px 0;
-        }
-        .reaction-row { padding: 8px 10px; display: flex; justify-content: space-around; font-size: 20px; }
-        .reaction-row span { cursor: pointer; transition: 0.2s; }
-        .reaction-row span:hover { transform: scale(1.2); }
-        .menu-divider { height: 1px; background: #17212b; margin: 5px 0; }
-        .menu-item { padding: 10px 15px; color: #fff; display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; }
-        .menu-item:hover { background: #17212b; }
-        .delete { color: #ff595a; }
-
-        /* MOBILE SHEET */
-        .mobile-sheet-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: flex-end; }
-        .mobile-sheet { width: 100%; background: #17212b; border-radius: 16px 16px 0 0; padding: 10px 0 20px; animation: slideUp 0.2s; }
-        .sheet-handle { width: 40px; height: 4px; background: #4a5766; margin: 0 auto 15px; border-radius: 2px; }
-        .sheet-reactions { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; padding: 0 10px; }
-        .sheet-emoji-btn { background: #232e3c; border: none; font-size: 24px; width: 45px; height: 45px; border-radius: 50%; }
-        .sheet-item { padding: 15px 20px; display: flex; align-items: center; gap: 15px; font-size: 16px; color: #fff; }
-        .sheet-item:active { background: #232e3c; }
-        .delete-item { color: #ff595a; }
-
-        /* NEW PREVIEW MODAL */
-        .preview-container-new { width: 90%; max-width: 500px; background: #17212b; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; max-height: 80vh; }
-        .preview-top-bar { padding: 12px 15px; background: #232e3c; display: flex; justify-content: space-between; color: #fff; font-weight: bold; }
+        /* PREVIEW GRID */
+        .preview-container-new { width: 90%; max-width: 500px; background: #17212b; border-radius: 12px; overflow: hidden; max-height: 80vh; display: flex; flex-direction: column; }
         .preview-content-scroll { padding: 10px; overflow-y: auto; flex: 1; }
-        .preview-grid-new { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
-        .preview-card { position: relative; aspect-ratio: 1; background: #000; border-radius: 6px; overflow: hidden; }
+        .preview-grid-new { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+        .preview-card { position: relative; aspect-ratio: 1; border-radius: 6px; overflow: hidden; }
         .preview-card img, .preview-card video { width: 100%; height: 100%; object-fit: cover; }
         .preview-footer { padding: 10px; background: #232e3c; display: flex; gap: 10px; }
         .preview-footer input { flex: 1; background: #0e1621; border: none; color: #fff; padding: 10px; border-radius: 8px; }
-        .preview-footer button { background: #4aa3df; border: none; padding: 0 20px; border-radius: 8px; color: #fff; }
-        .remove-preview-btn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
 
-        .loader { width: 48px; height: 48px; border: 3px solid #FFF; border-bottom-color: transparent; border-radius: 50%; display: inline-block; box-sizing: border-box; animation: rotation 1s linear infinite; }
-        .loader-mini { width: 20px; height: 20px; border: 2px solid #FFF; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
-        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* MISC */
+        .sender-name { color: #cfab56; font-size: 12px; font-weight: bold; display: block; }
+        .reactions-row { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+        .reaction-pill { background: rgba(0,0,0,0.3); border-radius: 12px; padding: 2px 6px; font-size: 11px; cursor: pointer; }
+        .my-reaction { background: rgba(74, 163, 223, 0.4); border: 1px solid #4aa3df; }
         
-        .meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 2px; }
-        .time { font-size: 10px; color: #8faec5; }
-        .checks { font-size: 11px; color: #4aa3df; }
+        .upload-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; }
+        .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000; display: flex; align-items: center; justify-content: center; }
+        .lightbox video, .lightbox img { max-width: 100%; max-height: 90%; }
+        .close-lightbox { position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; font-size: 30px; cursor: pointer; }
+
+        .loader { width: 30px; height: 30px; border: 3px solid #FFF; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+        /* MOBILE SHEET & CONTEXT MENU styles here (same as previous but refined) */
+        .mobile-sheet-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; display: flex; align-items: flex-end; }
+        .mobile-sheet { width: 100%; background: #17212b; border-radius: 16px 16px 0 0; padding: 15px 0; }
+        .context-menu { position: fixed; background: #232e3c; border-radius: 8px; z-index: 9999; min-width: 180px; padding: 5px; box-shadow: 0 5px 15px #000; }
+        .menu-item { padding: 10px; color: #fff; display: flex; gap: 10px; cursor: pointer; }
+        .menu-item:hover { background: #17212b; }
       `}</style>
     </div>
   );
+}
+
+// --- SUB COMPONENTS ---
+const MessageBubble = ({ msg, currentUser, onContext, uploadQueue, setMediaZoom }) => {
+  const isMyMsg = msg.sender_id === currentUser.id;
+  const reactions = msg.reactions || {};
+  
+  return (
+    <div 
+      className={`message-row ${isMyMsg ? 'my-row' : 'other-row'}`}
+      onContextMenu={(e) => { e.preventDefault(); if(!msg.tempId) onContext({ x: e.pageX, y: e.pageY, msg, type: 'desktop' }); }}
+      onTouchStart={(e) => { if(!msg.tempId) onContext({ msg, type: 'mobile' }); }}
+    >
+      <div className="bubble">
+        {!isMyMsg && <span className="sender-name">{msg.sender?.username}</span>}
+        
+        {/* REPLY */}
+        {msg.reply_to_id && <div className="reply-preview">Reply...</div>}
+
+        {/* CONTENT */}
+        {msg.file_type === 'voice' ? (
+           <div className="voice-msg">
+              <FaMicrophone className="voice-icon" />
+              <audio controls src={msg.file_url} className="voice-player" />
+           </div>
+        ) : (
+           <>
+             {msg.file_url && (
+               <div className="media-container" onClick={() => setMediaZoom({url: msg.file_url, type: msg.file_type})}>
+                  {msg.file_type === 'video' ? <video src={msg.file_url} /> : <img src={msg.file_url} />}
+                  {msg.status === 'uploading' && <div className="upload-overlay">{uploadQueue[msg.tempId]}%</div>}
+               </div>
+             )}
+             {msg.content && <p style={{margin: '4px 0', whiteSpace: 'pre-wrap'}}>{msg.content}</p>}
+           </>
+        )}
+
+        {/* REACTIONS */}
+        {Object.keys(reactions).length > 0 && (
+           <div className="reactions-row">
+             {Object.entries(reactions).map(([emoji, uids]) => (
+                <span key={emoji} className={`reaction-pill ${uids.includes(currentUser.id) ? 'my-reaction' : ''}`}>
+                   {emoji} {uids.length}
+                </span>
+             ))}
+           </div>
+        )}
+
+        {/* META */}
+        <div style={{display:'flex', justifyContent:'flex-end', fontSize:'10px', color:'#8faec5', gap:'4px'}}>
+           {new Date(msg.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}
+           {isMyMsg && (msg.is_read ? <FaCheckDouble style={{color:'#4aa3df'}}/> : <FaCheck/>)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const ContextMenu = ({ contextMenu, currentUser, onReaction, onDelete, onReply, onEdit, onClose }) => {
+   const isMobile = contextMenu.type === 'mobile';
+   const style = isMobile ? {} : { top: Math.min(contextMenu.y, window.innerHeight-250), left: Math.min(contextMenu.x, window.innerWidth-200) };
+   const Wrapper = isMobile ? 'div' : 'div';
+   const wrapperClass = isMobile ? 'mobile-sheet-overlay' : '';
+
+   const Content = (
+      <div className={isMobile ? 'mobile-sheet' : 'context-menu'} style={style} onClick={e => e.stopPropagation()}>
+         <div style={{display:'flex', justifyContent:'center', gap:'10px', padding:'10px'}}>
+            {REACTION_EMOJIS.map(e => <span key={e} style={{fontSize:'24px', cursor:'pointer'}} onClick={() => onReaction(e)}>{e}</span>)}
+         </div>
+         <div className="menu-item" onClick={onReply}><FaReply/> Javob berish</div>
+         <div className="menu-item" onClick={() => {navigator.clipboard.writeText(contextMenu.msg.content); onClose();}}><FaCopy/> Nusxalash</div>
+         {contextMenu.msg.sender_id === currentUser.id && (
+            <>
+               <div className="menu-item" onClick={onEdit}><FaPen/> Tahrirlash</div>
+               <div className="menu-item" style={{color:'#ff595a'}} onClick={onDelete}><FaTrash/> O'chirish</div>
+            </>
+         )}
+      </div>
+   );
+
+   if (isMobile) return <div className="mobile-sheet-overlay" onClick={onClose}>{Content}</div>;
+   return <>{Content}<div style={{position:'fixed', inset:0, zIndex:9998}} onClick={onClose}/></>;
 }

@@ -300,7 +300,7 @@ export default function Home() {
         }
 
         .dashboard-card {
-          max-width: 600px;
+          max-width: 500px;
         }
 
         /* Typography */

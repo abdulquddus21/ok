@@ -3,11 +3,40 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { 
   FaSearch, FaPen, FaUserFriends, FaBullhorn, FaTimes, 
-  FaUserAstronaut, FaArrowLeft, FaCamera, FaTrash, FaBan, FaPlus 
+  FaUserAstronaut, FaArrowLeft, FaCamera, FaTrash, FaPlus, FaHistory 
 } from 'react-icons/fa'
 import { supabase } from '../../lib/supabaseClient'
 import Navbar from '../../components/Navbar'
 import ChatWindow from '../../components/ChatWindow' 
+
+// --- IMAGE COMPONENT WITH BLUR EFFECT ---
+const AvatarImage = ({ src, alt, className }) => {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div className={`img-wrapper ${className}`}>
+      <img 
+        src={src} 
+        alt={alt} 
+        className={`smooth-img ${loaded ? 'loaded' : 'loading'}`}
+        onLoad={() => setLoaded(true)}
+      />
+      <style jsx>{`
+        .img-wrapper {
+          width: 100%; height: 100%; position: relative; overflow: hidden; background: #2d3b55;
+        }
+        .smooth-img {
+          width: 100%; height: 100%; object-fit: cover;
+          opacity: 0; filter: blur(5px);
+          transition: opacity 0.4s ease-in-out, filter 0.4s ease-in-out;
+        }
+        .smooth-img.loaded {
+          opacity: 1; filter: blur(0);
+        }
+      `}</style>
+    </div>
+  );
+};
 
 // --- CATBOX UPLOAD ---
 const uploadToCatbox = (file) => {
@@ -34,14 +63,17 @@ export default function ChatList() {
   // Data States
   const [chats, setChats] = useState([]); 
   const [suggestedUsers, setSuggestedUsers] = useState([]); 
+  
+  // Search States
   const [searchResults, setSearchResults] = useState([]); 
-  const [selectedChatId, setSelectedChatId] = useState(null); 
-  const [loading, setLoading] = useState(true);
-
-  // UI States
-  const [isMobileView, setIsMobileView] = useState(false);
+  const [searchHistory, setSearchHistory] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const [selectedChatId, setSelectedChatId] = useState(null); 
+  const [loading, setLoading] = useState(true);
+  const [isMobileView, setIsMobileView] = useState(false);
 
   // Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -64,8 +96,14 @@ export default function ChatList() {
     window.addEventListener('resize', handleResize);
     window.addEventListener('click', () => setContextMenu(null));
 
-    // Auth Check
+    // Auth & History Check
     const storedUser = localStorage.getItem('mlbb_user');
+    const storedHistory = localStorage.getItem('chat_search_history');
+    
+    if (storedHistory) {
+      setSearchHistory(JSON.parse(storedHistory));
+    }
+
     if (!storedUser) {
       router.push('/');
       return;
@@ -119,18 +157,47 @@ export default function ChatList() {
     setSearchQuery(query);
 
     if (query.length > 1) {
+      setSearchLoading(true);
       const { data: users } = await supabase.from('users').select('*').ilike('username', `%${query}%`).limit(5);
       const { data: rooms } = await supabase.from('rooms').select('*').neq('type', 'private').ilike('name', `%${query}%`).limit(5);
 
       const formattedUsers = users?.map(u => ({ ...u, type: 'user', name: u.username })) || [];
       const formattedRooms = rooms || [];
       setSearchResults([...formattedUsers, ...formattedRooms]);
+      setSearchLoading(false);
     } else {
       setSearchResults([]);
+      setSearchLoading(false);
     }
   };
 
+  const saveToHistory = (item) => {
+    // Historyda bormi yo'qmi tekshirish (takrorlanmasligi uchun)
+    const exists = searchHistory.find(h => h.id === item.id);
+    let newHistory = searchHistory;
+    
+    if (!exists) {
+      newHistory = [item, ...searchHistory].slice(0, 5); // Faqat oxirgi 5 tasini saqlash
+    } else {
+      // Agar bo'lsa uni tepaga chiqarish
+      newHistory = [item, ...searchHistory.filter(h => h.id !== item.id)];
+    }
+    
+    setSearchHistory(newHistory);
+    localStorage.setItem('chat_search_history', JSON.stringify(newHistory));
+  };
+
+  const clearHistory = () => {
+    setSearchHistory([]);
+    localStorage.removeItem('chat_search_history');
+  }
+
   const handleChatSelect = async (chat) => {
+    // Qidiruvdan bosilgan bo'lsa tarixga saqlash
+    if (isSearching) {
+      saveToHistory(chat);
+    }
+
     if (chat.type === 'user') {
       const { data: existingRoom } = await supabase
           .from('rooms')
@@ -251,15 +318,49 @@ export default function ChatList() {
         {/* LIST CONTAINER */}
         <div className="chat-list-container">
           
+          {/* SEARCH LOADING */}
+          {isSearching && searchLoading && (
+             <div className="search-loader-box">
+                <span className="loader small"></span>
+             </div>
+          )}
+
+          {/* SEARCH HISTORY */}
+          {isSearching && !searchQuery && !searchLoading && searchHistory.length > 0 && (
+            <div className="list-section">
+               <div className="history-header">
+                 <h4 className="section-title">QIDIRUV TARIXI</h4>
+                 <button className="clear-history" onClick={clearHistory}>Tozalash</button>
+               </div>
+               {searchHistory.map((item) => (
+                <div key={item.id} className="chat-item" onClick={() => handleChatSelect(item)}>
+                  <div className="avatar global">
+                     {item.image_url || item.avatar_url ? (
+                        <AvatarImage src={item.image_url || item.avatar_url} alt="ava" />
+                     ) : (
+                       <FaHistory />
+                     )}
+                  </div>
+                  <div className="info">
+                    <h3>{item.name || item.username}</h3>
+                    <p className="status-text">{item.type === 'user' ? 'Foydalanuvchi' : 'Guruh/Kanal'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* SEARCH RESULTS */}
-          {isSearching && searchQuery.length > 0 && (
+          {isSearching && searchQuery.length > 0 && !searchLoading && (
             <div className="list-section">
               <h4 className="section-title">GLOBAL QIDIRUV</h4>
               {searchResults.length === 0 && <p className="no-result">Topilmadi</p>}
               {searchResults.map((item) => (
                 <div key={item.id} className="chat-item" onClick={() => handleChatSelect(item)}>
                   <div className="avatar global">
-                     {item.image_url ? <img src={item.image_url} className="avatar-img" /> : (item.name?.[0])}
+                     {item.image_url || item.avatar_url ? (
+                        <AvatarImage src={item.image_url || item.avatar_url} alt="ava" />
+                     ) : (item.name?.[0])}
                   </div>
                   <div className="info">
                     <h3>{item.name || item.username}</h3>
@@ -291,7 +392,7 @@ export default function ChatList() {
                 >
                   <div className={`avatar ${chat.type}`}>
                     {chat.image_url ? (
-                      <img src={chat.image_url} alt="ava" className="avatar-img"/>
+                      <AvatarImage src={chat.image_url} alt="ava" />
                     ) : (
                       chat.type === 'channel' ? <FaBullhorn /> : (chat.type === 'group' ? <FaUserFriends /> : <FaUserAstronaut />)
                     )}
@@ -315,7 +416,9 @@ export default function ChatList() {
                   <h4 className="section-title gold-text">TAVSIYA ETILGANLAR</h4>
                   {suggestedUsers.map((u) => (
                      <div key={u.id} className="chat-item suggestion" onClick={() => handleChatSelect(u)}>
-                        <div className="avatar global"><FaUserAstronaut /></div>
+                        <div className="avatar global">
+                          {u.avatar_url ? <AvatarImage src={u.avatar_url} /> : <FaUserAstronaut />}
+                        </div>
                         <div className="info">
                           <h3>{u.username}</h3>
                           <p className="status-text">Yangi suhbat</p>
@@ -379,15 +482,14 @@ export default function ChatList() {
         </div>
       )}
 
-      {/* DESKTOP CONTEXT MENU */}
+      {/* DESKTOP CONTEXT MENU (Block removed) */}
       {contextMenu?.type === 'desktop' && (
         <div className="context-menu desktop" style={{ top: contextMenu.y, left: contextMenu.x }} onClick={(e) => e.stopPropagation()}>
           <div className="menu-item delete" onClick={() => { setShowDeleteConfirm(contextMenu.chat); setContextMenu(null); }}><FaTrash /> O'chirish</div>
-          <div className="menu-item block" onClick={() => setContextMenu(null)}><FaBan /> Bloklash</div>
         </div>
       )}
 
-      {/* MOBILE BOTTOM SHEET MENU */}
+      {/* MOBILE BOTTOM SHEET MENU (Block removed) */}
       {contextMenu?.type === 'mobile' && (
         <div className="mobile-sheet-overlay" onClick={() => setContextMenu(null)}>
           <div className="mobile-sheet" onClick={(e) => e.stopPropagation()}>
@@ -395,9 +497,6 @@ export default function ChatList() {
             <h3 className="sheet-title">{contextMenu.chat.name}</h3>
             <div className="sheet-item delete" onClick={() => { setShowDeleteConfirm(contextMenu.chat); setContextMenu(null); }}>
               <FaTrash /> Suhbatni o'chirish
-            </div>
-            <div className="sheet-item" onClick={() => setContextMenu(null)}>
-              <FaBan /> Bloklash
             </div>
           </div>
         </div>
@@ -418,8 +517,7 @@ export default function ChatList() {
 
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto:wght@400;500&display=swap');
-        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif; overflow: hidden; overscroll-behavior: none;   /* Mobil scroll effektini yumshatish */
-          -webkit-tap-highlight-color: transparent;}
+        body { margin: 0; background: #0b1120; color: #fff; font-family: 'Roboto', sans-serif; overflow: hidden; overscroll-behavior: none; -webkit-tap-highlight-color: transparent;}
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #2d3b55; border-radius: 2px; }
@@ -461,7 +559,6 @@ export default function ChatList() {
           display: flex; align-items: center; justify-content: center; margin-right: 12px; 
           font-size: 20px; color: #cfab56; border: 1px solid #2d3b55; flex-shrink: 0; overflow: hidden;
         }
-        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
         
         .info { flex: 1; overflow: hidden; }
         .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
@@ -471,12 +568,17 @@ export default function ChatList() {
         .chat-item.active .last-msg { color: #cfab56; }
         .status-text { margin: 0; font-size: 12px; color: #64748b; }
 
+        /* SEARCH HISTORY */
+        .history-header { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+        .clear-history { background: none; border: none; color: #ff595a; font-size: 11px; cursor: pointer; text-decoration: underline; }
+
         /* SUGGESTIONS */
         .empty-state { text-align: center; color: #64748b; padding: 30px 0; font-size: 14px; }
         .section-title { font-size: 11px; color: #cfab56; padding: 10px; margin: 0; letter-spacing: 1px; opacity: 0.8; }
         .suggestion { opacity: 0.9; }
         .plus-icon { color: #cfab56; font-size: 12px; margin-left: 10px; }
         .no-result { text-align: center; padding: 20px; color: #64748b; }
+        .search-loader-box { padding: 20px; text-align: center; }
 
         /* FAB */
         .fab { 
@@ -551,39 +653,21 @@ export default function ChatList() {
         .cancel-btn { background: #334155; color: #fff; }
         .delete-btn { background: #ff595a; color: #fff; }
 
-        /* --- NEW LOADER STYLES --- */
+        /* --- LOADER STYLES --- */
         .loader {
-          width: 48px;
-          height: 48px;
-          display: inline-block;
-          position: relative;
+          width: 48px; height: 48px; display: inline-block; position: relative;
         }
-        .loader::after,
-        .loader::before {
-          content: '';  
-          box-sizing: border-box;
-          width: 48px;
-          height: 48px;
-          border-radius: 50%;
-          border: 2px solid #FFF;
-          position: absolute;
-          left: 0;
-          top: 0;
+        .loader.small { width: 30px; height: 30px; }
+        .loader::after, .loader::before {
+          content: ''; box-sizing: border-box; width: 100%; height: 100%;
+          border-radius: 50%; border: 2px solid #FFF; position: absolute; left: 0; top: 0;
           animation: animloader 2s linear infinite;
         }
-        .loader::after {
-          animation-delay: 1s;
-        }
+        .loader::after { animation-delay: 1s; }
 
         @keyframes animloader {
-          0% {
-            transform: scale(0);
-            opacity: 1;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 0;
-          }
+          0% { transform: scale(0); opacity: 1; }
+          100% { transform: scale(1); opacity: 0; }
         }
       `}</style>
     </div>
