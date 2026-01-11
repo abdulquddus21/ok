@@ -479,7 +479,7 @@ export default function ChatList() {
 
         /* FAB */
         .fab { 
-          position: absolute; bottom: 100px; right: 20px; width: 56px; height: 56px; 
+          position: absolute; bottom: 120px; right: 20px; width: 56px; height: 56px; 
           border-radius: 50%; background: linear-gradient(135deg, #cfab56, #a67c2e); border: none; color: #000; 
           font-size: 20px; display: flex; align-items: center; justify-content: center; 
           cursor: pointer; box-shadow: 0 4px 15px rgba(207, 171, 86, 0.4); z-index: 100;
