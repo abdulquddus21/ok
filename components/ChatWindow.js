@@ -3,13 +3,13 @@ import { supabase } from '../lib/supabaseClient';
 import { 
   FaPaperPlane, FaPaperclip, FaArrowLeft, FaEllipsisV, 
   FaCheck, FaCheckDouble, FaUserAstronaut, FaTimes, FaPlay, 
-  FaTrash, FaPen, FaReply, FaCopy 
+  FaTrash, FaPen, FaReply, FaCopy, FaDownload 
 } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // --- SOUND ---
-const SEND_SOUND = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA//OEAAAAAAAAAAAAAAAAAAAAAAAAMGluZv////8AAAAAAAEgAAAAP8Y9JgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA';
+const SEND_SOUND = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA//OEAAAAAAAAAAAAAAAAAAAAAAAAMGluZv////8AAAAAAAEgAAAAP8Y9JgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//OEZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA//OGZAAAAAAAGQAAAAAAACAAAP/zhmQAAAAAABkAAAAAAAAgAAD/84ZkAAAAAAAZAAAAAAAAIAAA';
 
 // --- CATBOX UPLOAD ---
 const uploadToCatbox = (file, onProgress) => {
@@ -32,7 +32,7 @@ const uploadToCatbox = (file, onProgress) => {
       else reject(`Upload failed: ${xhr.status}`);
     };
     xhr.onerror = () => reject('Network error');
-    xhr.open('POST', '/api/catbox', true);
+    xhr.open('POST', '/api/catbox', true); // Proxy or Direct URL
     xhr.send(formData);
   });
 };
@@ -43,6 +43,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [subscribersCount, setSubscribersCount] = useState(0);
+  const [onlineUsers, setOnlineUsers] = useState(new Set()); // Online users state
   
   // States
   const [selectedFiles, setSelectedFiles] = useState([]); 
@@ -51,9 +52,9 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   const [mediaZoom, setMediaZoom] = useState(null); 
   
   // Context Menu & Reply & Edit
-  const [contextMenu, setContextMenu] = useState(null); // { x, y, msg }
-  const [replyTo, setReplyTo] = useState(null); // Message object
-  const [editingMsg, setEditingMsg] = useState(null); // Message object
+  const [contextMenu, setContextMenu] = useState(null); 
+  const [replyTo, setReplyTo] = useState(null); 
+  const [editingMsg, setEditingMsg] = useState(null); 
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -67,12 +68,32 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
     fetchChatDetails();
     fetchMessages();
 
+    // -- Messages Channel --
     const channel = supabase.channel(`room:${chatId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'messages', filter: `room_id=eq.${chatId}` }, 
       (payload) => handleRealtimeEvent(payload))
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    // -- Presence (Online Status) Channel --
+    const presenceChannel = supabase.channel(`presence:${chatId}`)
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const users = new Set();
+        for (const id in state) {
+           state[id].forEach(p => users.add(p.user_id));
+        }
+        setOnlineUsers(users);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({ user_id: currentUser.id, online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(presenceChannel);
+    };
   }, [chatId]);
 
   // 2. AUTO SCROLL
@@ -86,8 +107,11 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
     const { data: room } = await supabase.from('rooms').select('*').eq('id', chatId).single();
     if (room?.type === 'private') {
        const { data: partner } = await supabase.from('room_participants')
-        .select('users(username)').eq('room_id', chatId).neq('user_id', currentUser.id).single();
-       if (partner?.users) room.name = partner.users.username;
+        .select('users(username, id)').eq('room_id', chatId).neq('user_id', currentUser.id).single();
+       if (partner?.users) {
+         room.name = partner.users.username;
+         room.partnerId = partner.users.id; // ID ni saqlab olamiz online tekshirish uchun
+       }
     }
     const { count } = await supabase.from('room_participants').select('*', { count: 'exact', head: true }).eq('room_id', chatId);
     setChatInfo(room);
@@ -97,7 +121,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   const fetchMessages = async () => {
     const { data } = await supabase
       .from('messages')
-      .select('*, sender:users(username)') // reply_to ni ham olish kerak aslida, lekin UI da ko'rsatamiz
+      .select('*, sender:users(username)') 
       .eq('room_id', chatId)
       .order('created_at', { ascending: true });
     if (data) setMessages(data);
@@ -112,7 +136,6 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   // --- REALTIME HANDLER ---
   const handleRealtimeEvent = async (payload) => {
     const { eventType, new: newMsg, old: oldMsg } = payload;
-
     if (eventType === 'INSERT') {
       if (!newMsg.sender) {
         const { data: sender } = await supabase.from('users').select('username').eq('id', newMsg.sender_id).single();
@@ -120,15 +143,12 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
       }
       setMessages(prev => {
         if (prev.some(m => m.id === newMsg.id)) return prev;
-        // Ovoz faqat boshqadan kelsa
         if (newMsg.sender_id !== currentUser.id) playSound();
         return [...prev, newMsg];
       });
-    } 
-    else if (eventType === 'UPDATE') {
+    } else if (eventType === 'UPDATE') {
       setMessages(prev => prev.map(m => m.id === newMsg.id ? { ...m, ...newMsg, sender: m.sender } : m));
-    }
-    else if (eventType === 'DELETE') {
+    } else if (eventType === 'DELETE') {
       setMessages(prev => prev.filter(m => m.id !== oldMsg.id));
     }
   };
@@ -140,12 +160,11 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
     }
   };
 
-  // --- ACTIONS (SEND, EDIT, DELETE) ---
+  // --- ACTIONS ---
   const handleSend = async () => {
     if (selectedFiles.length === 0 && !newMessage.trim()) return;
 
     if (editingMsg) {
-      // Tahrirlash rejimi
       await supabase.from('messages').update({ content: newMessage }).eq('id', editingMsg.id);
       setEditingMsg(null);
       setNewMessage('');
@@ -156,6 +175,9 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
     setNewMessage('');
     setShowPreview(false);
     setSelectedFiles([]);
+    
+    // Reply objectni saqlab olamiz
+    const replyPayload = replyTo ? { id: replyTo.id } : null; 
     setReplyTo(null);
     playSound();
 
@@ -165,10 +187,10 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
       const optimistic = {
         id: tempId, tempId, content: caption, sender_id: currentUser.id,
         created_at: new Date().toISOString(), sender: { username: currentUser.username },
-        is_read: false, status: 'sending', reply_to: replyTo
+        is_read: false, status: 'sending', reply_to_id: replyPayload?.id // Optimistic update uchun
       };
       setMessages(prev => [...prev, optimistic]);
-      await sendSingleMessage(caption, null, null, tempId, replyTo);
+      await sendSingleMessage(caption, null, null, tempId, replyPayload);
       return;
     }
 
@@ -182,7 +204,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         id: tempId, tempId, content: isLast ? caption : '', sender_id: currentUser.id,
         created_at: new Date().toISOString(), sender: { username: currentUser.username },
         file_url: URL.createObjectURL(file), file_type: fileType,
-        is_read: false, status: 'uploading', reply_to: replyTo
+        is_read: false, status: 'uploading', reply_to_id: isLast ? replyPayload?.id : null
       };
 
       setMessages(prev => [...prev, optimistic]);
@@ -190,7 +212,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
 
       try {
         const url = await uploadToCatbox(file, (percent) => setUploadQueue(prev => ({ ...prev, [tempId]: percent })));
-        await sendSingleMessage(isLast ? caption : '', url, fileType, tempId, replyTo);
+        await sendSingleMessage(isLast ? caption : '', url, fileType, tempId, isLast ? replyPayload : null);
         setUploadQueue(prev => { const n = { ...prev }; delete n[tempId]; return n; });
       } catch (error) {
         toast.error("Yuklashda xatolik!");
@@ -200,25 +222,19 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   };
 
   const sendSingleMessage = async (content, fileUrl, fileType, tempId, replyObj) => {
-    // Reply ma'lumotlarini content ichiga JSON qilib yozamiz (yoki alohida column kerak)
-    // Hozir soddalik uchun contentni o'zida saqlaymiz yoki faqat UI da
-    // Haqiqiy proyektda: reply_to_id columni bo'lishi kerak.
-    
     const payload = {
       room_id: chatId,
       sender_id: currentUser.id,
       content: content ? content.trim() : '',
       file_url: fileUrl,
       file_type: fileType,
-      is_read: false,
-      // Supabase da reply_to column bo'lmasa, buni ignor qiladi yoki error beradi.
-      // Agar error bersa bu qatorni olib tashlang.
-      // reply_to_id: replyObj ? replyObj.id : null 
+      // Bazangizda 'reply_to_id' ustuni bo'lishi shart
+      reply_to_id: replyObj ? replyObj.id : null 
     };
 
     const { data, error } = await supabase.from('messages').insert([payload]).select().single();
     if (!error && data && tempId) {
-      setMessages(prev => prev.map(m => m.tempId === tempId ? { ...data, sender: { username: currentUser.username }, reply_to: replyObj } : m));
+      setMessages(prev => prev.map(m => m.tempId === tempId ? { ...data, sender: { username: currentUser.username } } : m));
     }
   };
 
@@ -245,18 +261,27 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   // --- CONTEXT MENU LOGIC ---
   const handleContextMenu = (e, msg) => {
     e.preventDefault();
-    if (isMobile) return; // PC right click
-    setContextMenu({ x: e.pageX, y: e.pageY, msg });
+    if (isMobile) return; 
+    setContextMenu({ x: e.pageX, y: e.pageY, msg, type: 'desktop' });
   };
 
   const handleTouchStart = (e, msg) => {
     if (!isMobile) return;
     longPressTimer.current = setTimeout(() => {
-      setContextMenu({ x: e.touches[0].pageX, y: e.touches[0].pageY, msg });
-    }, 800); // 800ms long press
+      // Mobile uchun maxsus type
+      setContextMenu({ msg, type: 'mobile' });
+      // Vibratsiya (agar telefon qo'llasa)
+      if (navigator.vibrate) navigator.vibrate(50);
+    }, 600); 
   };
 
   const handleTouchEnd = () => clearTimeout(longPressTimer.current);
+
+  // Helper to find reply message
+  const getReplyMessage = (id) => messages.find(m => m.id === id);
+
+  // Online Check
+  const isPartnerOnline = chatInfo?.type === 'private' && onlineUsers.has(chatInfo.partnerId);
 
   // --- RENDER ---
   if (!chatId) return <div className="placeholder"><div className="bubble">Tanlang</div></div>;
@@ -266,7 +291,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   const canWrite = !isChannel || isOwner;
 
   return (
-    <div className="chat-window telegram-bg" onClick={() => setContextMenu(null)}>
+    <div className={`chat-window telegram-bg ${isMobile ? 'mobile-window' : ''}`} onClick={() => setContextMenu(null)}>
       <ToastContainer position="top-center" theme="dark" autoClose={2000} />
       <audio ref={audioRef} src={SEND_SOUND} />
 
@@ -279,7 +304,14 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
           </div>
           <div className="info">
             <h3>{chatInfo?.name || '...'}</h3>
-            <p>{loading ? '...' : (isChannel ? `${subscribersCount} obunachi` : 'online')}</p>
+            {/* Online/Offline Status Logic */}
+            <p className={isPartnerOnline ? 'status-online' : ''}>
+              {loading ? '...' : (
+                chatInfo?.type === 'private' 
+                ? (isPartnerOnline ? 'online' : 'yaqinda kirgan') 
+                : (isChannel ? `${subscribersCount} obunachi` : `${subscribersCount} a'zo`)
+              )}
+            </p>
           </div>
         </div>
         <button className="menu-btn"><FaEllipsisV /></button>
@@ -293,6 +325,9 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
           const isMyMsg = msg.sender_id === currentUser.id;
           const showName = !isMyMsg && (chatInfo?.type === 'group' || isChannel);
           const uploadProgress = msg.tempId ? uploadQueue[msg.tempId] : null;
+          
+          // Reply Message Logic
+          const repliedMsg = msg.reply_to_id ? getReplyMessage(msg.reply_to_id) : null;
 
           return (
             <div 
@@ -305,9 +340,19 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
               <div className="bubble">
                 {showName && <span className="sender-name">{msg.sender?.username}</span>}
                 
-                {/* Reply Preview in Message */}
-                {/* Agar bazada reply saqlansa shu yerda ko'rsatiladi */}
-                
+                {/* REPLY VISUALIZATION INSIDE BUBBLE */}
+                {repliedMsg && (
+                  <div className="reply-preview-in-msg" onClick={() => document.getElementById(repliedMsg.id)?.scrollIntoView({ behavior: 'smooth' })}>
+                    <div className="reply-line"></div>
+                    <div className="reply-content-box">
+                      <span className="reply-sender-name">{repliedMsg.sender?.username}</span>
+                      <span className="reply-text-truncate">
+                        {repliedMsg.file_type ? (repliedMsg.file_type === 'video' ? 'Video' : 'Rasm') : repliedMsg.content}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Media */}
                 {msg.file_url && (
                   <div className="media-container" onClick={() => !msg.status && setMediaZoom({ url: msg.file_url, type: msg.file_type })}>
@@ -356,7 +401,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
             <div className="reply-bar">
               <div className="reply-icon">{editingMsg ? <FaPen /> : <FaReply />}</div>
               <div className="reply-info">
-                <span>{editingMsg ? 'Xabarni tahrirlash' : `Javob berilmoqda: ${replyTo.sender?.username}`}</span>
+                <span>{editingMsg ? 'Xabarni tahrirlash' : `Javob: ${replyTo?.sender?.username}`}</span>
                 <p>{editingMsg ? editingMsg.content : (replyTo.content || 'Media fayl')}</p>
               </div>
               <button onClick={() => { setReplyTo(null); setEditingMsg(null); setNewMessage(''); }}><FaTimes /></button>
@@ -369,7 +414,6 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
               type="file" multiple accept="image/*,video/*" 
               ref={fileInputRef} style={{display: 'none'}} 
               onChange={(e) => {
-                // 200MB Check
                 const large = Array.from(e.target.files).find(f => f.size > 200*1024*1024);
                 if(large) return toast.error("200MB dan katta fayl mumkin emas!");
                 setSelectedFiles(Array.from(e.target.files));
@@ -388,8 +432,8 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         </div>
       ) : null}
 
-      {/* CONTEXT MENU */}
-      {contextMenu && (
+      {/* CONTEXT MENU (DESKTOP) */}
+      {contextMenu?.type === 'desktop' && (
         <div className="context-menu" style={{ top: Math.min(contextMenu.y, window.innerHeight - 150), left: Math.min(contextMenu.x, window.innerWidth - 160) }}>
           <div className="menu-item" onClick={startReply}><FaReply /> Javob berish</div>
           <div className="menu-item" onClick={() => { navigator.clipboard.writeText(contextMenu.msg.content); setContextMenu(null); }}><FaCopy /> Nusxalash</div>
@@ -399,6 +443,26 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
               <div className="menu-item delete" onClick={deleteMessage}><FaTrash /> O'chirish</div>
             </>
           )}
+        </div>
+      )}
+
+      {/* MOBILE BOTTOM SHEET MENU */}
+      {contextMenu?.type === 'mobile' && (
+        <div className="mobile-sheet-overlay" onClick={() => setContextMenu(null)}>
+          <div className="mobile-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-handle"></div>
+            <div className="sheet-item" onClick={startReply}><FaReply /> Javob berish</div>
+            <div className="sheet-item" onClick={() => { navigator.clipboard.writeText(contextMenu.msg.content); setContextMenu(null); }}><FaCopy /> Nusxalash</div>
+            
+            {contextMenu.msg.sender_id === currentUser.id ? (
+              <>
+                 <div className="sheet-item" onClick={startEdit}><FaPen /> Tahrirlash</div>
+                 <div className="sheet-item delete-item" onClick={deleteMessage}><FaTrash /> O'chirish</div>
+              </>
+            ) : (
+                 <div className="sheet-item disabled"><FaTrash /> O'chirish (ruxsat yo'q)</div>
+            )}
+          </div>
         </div>
       )}
 
@@ -440,16 +504,28 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
       )}
 
       <style jsx>{`
-        /* MOBILE FIX */
+        /* GLOBAL RESET FOR MOBILE OVERSCROLL */
+        :global(body) { 
+          overscroll-behavior: none; 
+          background: #0e1621;
+        }
+
         .chat-window { 
-          display: flex; flex-direction: column; height: 100dvh; 
+          display: flex; flex-direction: column; height: 100vh; 
           background-color: #0e1621; background-image: url("https://web.telegram.org/img/bg_0.png"); 
           background-size: cover; position: relative; overflow: hidden;
         }
 
+        /* --- MOBILE SPECIFIC FIXES (RAMKANI YO'QOTISH) --- */
+        .mobile-window {
+          height: 100dvh; /* Dynamic viewport height */
+          width: 100vw;
+          position: fixed; top: 0; left: 0;
+        }
+
         /* HEADER */
         .glass-header {
-          height: 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px;
+          flex: 0 0 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 15px;
           background: rgba(23, 33, 43, 0.95); border-bottom: 1px solid rgba(0,0,0,0.3); z-index: 10;
         }
         .header-left { display: flex; align-items: center; gap: 10px; }
@@ -459,11 +535,12 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         }
         .info h3 { margin: 0; color: #cfab56; font-size: 16px; font-weight: 600; }
         .info p { margin: 0; font-size: 12px; color: #8899ac; }
+        .info p.status-online { color: #4aa3df; font-weight: bold; }
         .menu-btn, .back-btn { background: none; border: none; color: #cfab56; font-size: 20px; }
 
         /* MESSAGES */
         .messages-area { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-        .message-row { display: flex; width: 100%; user-select: none; } /* User select none for mobile long press feel */
+        .message-row { display: flex; width: 100%; user-select: none; }
         .my-row { justify-content: flex-end; }
         .other-row { justify-content: flex-start; }
 
@@ -477,15 +554,28 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         .sender-name { color: #cfab56; font-size: 12px; font-weight: bold; display: block; margin-bottom: 3px; }
         .content { margin: 0; word-wrap: break-word; line-height: 1.4; white-space: pre-wrap; }
 
-        /* MEDIA */
-        .media-container { margin-bottom: 5px; border-radius: 8px; overflow: hidden; position: relative; max-width: 300px; }
-        .media-container img, .media-container video { width: 100%; height: auto; display: block; max-height: 350px; object-fit: cover; }
+        /* REPLY INSIDE MESSAGE */
+        .reply-preview-in-msg {
+          display: flex; gap: 8px; margin-bottom: 5px; cursor: pointer;
+          background: rgba(0,0,0,0.1); padding: 4px; border-radius: 4px;
+        }
+        .reply-line { width: 3px; background: #cfab56; border-radius: 2px; }
+        .reply-content-box { display: flex; flex-direction: column; overflow: hidden; }
+        .reply-sender-name { font-size: 11px; color: #cfab56; font-weight: bold; }
+        .reply-text-truncate { font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* MEDIA FIX FOR MOBILE */
+        .media-container { margin-bottom: 5px; border-radius: 8px; overflow: hidden; position: relative; max-width: 100%; width: fit-content; }
+        .media-container img, .media-container video { 
+           display: block; max-width: 100%; max-height: 350px; 
+           object-fit: cover; min-width: 150px; min-height: 150px; /* Mobileda ko'rinmay qolmasligi uchun */
+        }
         .blur-media { filter: blur(5px); opacity: 0.6; }
         .upload-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 2; }
         .percent-text { font-weight: bold; color: #fff; text-shadow: 0 0 5px #000; }
 
         /* FOOTER */
-        .glass-footer { background: #17212b; border-top: 1px solid rgba(0,0,0,0.5); padding: 5px 10px; }
+        .glass-footer { background: #17212b; border-top: 1px solid rgba(0,0,0,0.5); padding: 5px 10px; flex-shrink: 0; }
         
         .reply-bar { 
           display: flex; align-items: center; gap: 10px; padding: 5px 10px; background: #0e1621; 
@@ -507,7 +597,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
           color: #000; font-size: 18px; display: flex; align-items: center; justify-content: center; 
         }
 
-        /* CONTEXT MENU */
+        /* DESKTOP CONTEXT MENU */
         .context-menu { 
           position: fixed; background: #17212b; border-radius: 8px; 
           box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 9999; overflow: hidden; min-width: 180px;
@@ -516,6 +606,25 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         .menu-item { padding: 12px 15px; color: #fff; display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .menu-item:hover { background: #232e3c; }
         .menu-item.delete { color: #ff595a; }
+
+        /* --- MOBILE BOTTOM SHEET (Yangi) --- */
+        .mobile-sheet-overlay {
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0,0,0,0.5); z-index: 10000;
+          display: flex; align-items: flex-end;
+        }
+        .mobile-sheet {
+          width: 100%; background: #1c242f;
+          border-radius: 12px 12px 0 0;
+          padding: 10px 0 20px 0;
+          animation: slideUp 0.25s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .sheet-handle { width: 40px; height: 4px; background: #3b4655; border-radius: 2px; margin: 0 auto 15px auto; }
+        .sheet-item { padding: 14px 20px; color: #fff; display: flex; align-items: center; gap: 15px; font-size: 16px; cursor: pointer; }
+        .sheet-item:active { background: #151a21; }
+        .delete-item { color: #ff595a; }
+        .disabled { opacity: 0.5; pointer-events: none; }
 
         /* PREVIEW MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; align-items: center; justify-content: center; }
