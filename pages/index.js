@@ -107,7 +107,7 @@ export default function Home() {
     <div className="container">
       <Head>
         <title>MLBB Dashboard</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
       </Head>
       
       {/* Orqa fon uchun dekoratsiya */}
@@ -231,13 +231,15 @@ export default function Home() {
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Roboto:wght@400;500&display=swap');
 
-        body {
+        html, body {
           margin: 0;
           padding: 0;
           background-color: #0b1120;
           color: #fff;
           font-family: 'Roboto', sans-serif;
           overflow-x: hidden;
+          /* Mobil scroll effektini yumshatish */
+          -webkit-tap-highlight-color: transparent;
         }
         
         * { box-sizing: border-box; }
@@ -247,10 +249,13 @@ export default function Home() {
         /* Container va Background */
         .container {
           min-height: 100vh;
+          /* Mobilda manzil qatori hisobga olinishi uchun */
+          min-height: 100dvh; 
           display: flex;
           flex-direction: column;
           position: relative;
           background: radial-gradient(circle at top center, #1e2a45 0%, #0b1120 80%);
+          overflow: hidden;
         }
 
         .bg-glow {
@@ -272,6 +277,7 @@ export default function Home() {
           align-items: center;
           padding: 20px;
           z-index: 1;
+          width: 100%;
         }
 
         /* CARD STYLES (Glassmorphism) */
@@ -290,6 +296,7 @@ export default function Home() {
           text-align: center;
           position: relative;
           overflow: hidden;
+          transition: all 0.3s ease;
         }
 
         .dashboard-card {
@@ -315,6 +322,7 @@ export default function Home() {
           font-family: 'Rajdhani', sans-serif;
           font-size: 32px;
           margin-bottom: 5px;
+          line-height: 1.2;
         }
         
         .silver-text {
@@ -347,7 +355,7 @@ export default function Home() {
           border: 1px solid #2d3b55;
           border-radius: 6px;
           color: white;
-          font-size: 16px;
+          font-size: 16px; /* iOS zoom issue fix */
           outline: none;
           transition: all 0.3s ease;
         }
@@ -395,6 +403,8 @@ export default function Home() {
           align-items: center;
           justify-content: center;
           gap: 8px;
+          /* Mobil click area yaxshilash */
+          min-height: 48px;
         }
 
         .btn:active {
@@ -447,6 +457,7 @@ export default function Home() {
           cursor: pointer;
           margin-top: 15px;
           text-decoration: underline;
+          font-size: 14px;
         }
 
         /* LINKS & EXTRAS */
@@ -457,7 +468,7 @@ export default function Home() {
           margin-bottom: 20px;
           font-weight: bold;
           border: 1px dashed #4aa3df;
-          padding: 5px 10px;
+          padding: 8px 12px;
           border-radius: 4px;
           font-size: 14px;
         }
@@ -466,6 +477,7 @@ export default function Home() {
           margin-top: 25px;
           font-size: 14px;
           color: #aaa;
+          line-height: 1.5;
         }
 
         .link-toggle {
@@ -473,6 +485,8 @@ export default function Home() {
           cursor: pointer;
           font-weight: bold;
           transition: color 0.3s;
+          display: inline-block;
+          padding: 5px;
         }
         
         .link-toggle:hover {
@@ -481,13 +495,14 @@ export default function Home() {
         }
 
         .error-msg {
-          background: rgba(255, 77, 79, 0.2);
+          background: rgba(255, 77, 79, 0.15);
           border: 1px solid #ff4d4f;
           color: #ff4d4f;
-          padding: 10px;
-          border-radius: 4px;
+          padding: 12px;
+          border-radius: 6px;
           margin-bottom: 20px;
           font-size: 14px;
+          line-height: 1.4;
         }
 
         .spinner {
@@ -501,6 +516,55 @@ export default function Home() {
 
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+
+        /* --- MOBILE RESPONSIVE TWEAKS --- */
+        @media (max-width: 600px) {
+          .bg-glow {
+            width: 100%;
+            height: 400px;
+            top: -50px;
+          }
+
+          .card {
+            padding: 25px 20px;
+            width: 95%; /* Ekranning 95% ini egallaydi */
+            margin: 0 auto;
+          }
+
+          .title {
+            font-size: 24px;
+            margin-bottom: 25px;
+          }
+
+          .gold-text {
+            font-size: 26px;
+          }
+
+          .form {
+            gap: 18px;
+          }
+
+          .input-group input {
+            padding: 14px 12px; /* Kattaroq touch area */
+          }
+          
+          .btn {
+            font-size: 15px;
+            padding: 16px;
+          }
+        }
+        
+        @media (max-height: 700px) {
+           /* Past bo'yli telefonlar uchun (landscape) */
+           .container {
+             justify-content: flex-start;
+             overflow-y: auto;
+           }
+           .main {
+             padding-top: 40px;
+             padding-bottom: 40px;
+           }
         }
       `}</style>
     </div>
