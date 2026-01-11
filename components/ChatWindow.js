@@ -32,7 +32,9 @@ const uploadToCatbox = (file, onProgress) => {
       else reject(`Upload failed: ${xhr.status}`);
     };
     xhr.onerror = () => reject('Network error');
-    // Agar proksi ishlamasa, to'g'ridan-to'g'ri sinab ko'rish uchun manzilni o'zgartirib ko'ring
+    // Proxy yoki direct linkni tekshiring. 
+    // Agar next.config.js da proxy bo'lmasa, to'g'ridan-to'g'ri ishlashi uchun CORS muammo bo'lishi mumkin.
+    // Hozirgi holatda /api/catbox deb qoldiraman (proxy bor deb hisoblab).
     xhr.open('POST', '/api/catbox', true); 
     xhr.send(formData);
   });
@@ -162,16 +164,20 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
     }
   };
 
-  // --- ACTIONS (SEND FIX) ---
+  // --- ACTIONS ---
   const handleSend = async () => {
-    if (isSending) return; // Prevent double send
+    if (isSending) return; 
     if (selectedFiles.length === 0 && !newMessage.trim()) return;
 
+    // --- TAHRIRLASH (EDIT) ---
     if (editingMsg) {
       const { error } = await supabase.from('messages').update({ content: newMessage }).eq('id', editingMsg.id);
-      if (error) toast.error("Tahrirlab bo'lmadi!");
-      setEditingMsg(null);
-      setNewMessage('');
+      if (error) {
+        toast.error("Tahrirlashda xatolik!");
+      } else {
+        setEditingMsg(null);
+        setNewMessage('');
+      }
       return;
     }
 
@@ -181,42 +187,41 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
     setShowPreview(false);
     setSelectedFiles([]);
     
-    // Reply objectni olish
-    const replyPayload = replyTo ? { id: replyTo.id } : null; 
+    // Reply ma'lumotlarini saqlab olamiz
+    const currentReplyTo = replyTo;
     setReplyTo(null);
+
     playSound();
 
-    // Text Message
+    // 1. Text xabar yuborish
     if (selectedFiles.length === 0) {
       const tempId = Date.now();
       const optimistic = {
         id: tempId, tempId, content: caption, sender_id: currentUser.id,
         created_at: new Date().toISOString(), sender: { username: currentUser.username },
-        is_read: false, status: 'sending', reply_to_id: replyPayload?.id
+        is_read: false, status: 'sending', reply_to_id: currentReplyTo?.id
       };
       setMessages(prev => [...prev, optimistic]);
       
-      const success = await sendSingleMessage(caption, null, null, tempId, replyPayload);
-      if (!success) {
-        setMessages(prev => prev.filter(m => m.tempId !== tempId)); // Remove if failed
-      }
+      const success = await sendSingleMessage(caption, null, null, tempId, currentReplyTo);
+      if (!success) setMessages(prev => prev.filter(m => m.tempId !== tempId));
       setIsSending(false);
       return;
     }
 
-    // Files Upload & Send
-    let successCount = 0;
+    // 2. Media xabarlar yuborish
     for (let index = 0; index < selectedFiles.length; index++) {
       const file = selectedFiles[index];
       const isLast = index === selectedFiles.length - 1;
       const fileType = file.type.startsWith('video') ? 'video' : 'image';
       const tempId = Date.now() + Math.random();
 
+      // Video optimistik UI
       const optimistic = {
         id: tempId, tempId, content: isLast ? caption : '', sender_id: currentUser.id,
         created_at: new Date().toISOString(), sender: { username: currentUser.username },
         file_url: URL.createObjectURL(file), file_type: fileType,
-        is_read: false, status: 'uploading', reply_to_id: isLast ? replyPayload?.id : null
+        is_read: false, status: 'uploading', reply_to_id: isLast ? currentReplyTo?.id : null
       };
 
       setMessages(prev => [...prev, optimistic]);
@@ -224,8 +229,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
 
       try {
         const url = await uploadToCatbox(file, (percent) => setUploadQueue(prev => ({ ...prev, [tempId]: percent })));
-        await sendSingleMessage(isLast ? caption : '', url, fileType, tempId, isLast ? replyPayload : null);
-        successCount++;
+        await sendSingleMessage(isLast ? caption : '', url, fileType, tempId, isLast ? currentReplyTo : null);
       } catch (error) {
         toast.error(`Fayl yuklanmadi: ${file.name}`);
         setMessages(prev => prev.filter(m => m.tempId !== tempId));
@@ -237,7 +241,6 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   };
 
   const sendSingleMessage = async (content, fileUrl, fileType, tempId, replyObj) => {
-    // Payloadni ehtiyotkorlik bilan yig'amiz
     const payload = {
       room_id: chatId,
       sender_id: currentUser.id,
@@ -247,35 +250,44 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
       is_read: false,
     };
 
-    // Agar replyObj bor bo'lsa, uni qo'shamiz
     if (replyObj && replyObj.id) {
         payload.reply_to_id = replyObj.id;
     }
 
     try {
       const { data, error } = await supabase.from('messages').insert([payload]).select().single();
-      
       if (error) {
-        console.error("Supabase Error:", error);
-        toast.error(`Yuborishda xatolik: ${error.message || error.details}`);
+        console.error(error);
+        toast.error("Yuborishda xatolik");
         return false;
       }
-
       if (data && tempId) {
         setMessages(prev => prev.map(m => m.tempId === tempId ? { ...data, sender: { username: currentUser.username } } : m));
       }
       return true;
     } catch (err) {
-      console.error("Network/Code Error:", err);
-      toast.error("Tarmoq xatoligi!");
+      toast.error("Tarmoq xatoligi");
       return false;
     }
   };
 
   const deleteMessage = async () => {
     if (!contextMenu?.msg) return;
+    
+    // O'chirish logikasi: Faqat o'z xabarini va bazaga tushgan xabarni
+    if (contextMenu.msg.sender_id !== currentUser.id) {
+       toast.error("Faqat o'z xabaringizni o'chira olasiz!");
+       return;
+    }
+
     const { error } = await supabase.from('messages').delete().eq('id', contextMenu.msg.id);
-    if (error) toast.error("O'chirib bo'lmadi");
+    if (error) {
+        console.error(error);
+        toast.error("O'chirib bo'lmadi (ruxsat yo'q yoki tarmoq xatosi)");
+    } else {
+        // UI dan darhol olib tashlash (Realtime kelguniga qadar)
+        setMessages(prev => prev.filter(m => m.id !== contextMenu.msg.id));
+    }
     setContextMenu(null);
   };
 
@@ -293,7 +305,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
     setContextMenu(null);
   };
 
-  // --- CONTEXT MENU LOGIC ---
+  // --- CONTEXT MENU HANDLERS ---
   const handleContextMenu = (e, msg) => {
     e.preventDefault();
     if (isMobile) return; 
@@ -309,6 +321,8 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
   };
 
   const handleTouchEnd = () => clearTimeout(longPressTimer.current);
+
+  // Helper
   const getReplyMessage = (id) => messages.find(m => m.id === id);
   const isPartnerOnline = chatInfo?.type === 'private' && onlineUsers.has(chatInfo.partnerId);
 
@@ -347,7 +361,11 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
 
       {/* MESSAGES */}
       <div className="messages-area">
-        {loading && <div className="spinner-center"><div className="spinner"></div></div>}
+        {loading && (
+           <div className="spinner-center">
+             <span className="loader"></span>
+           </div>
+        )}
         
         {messages.map((msg) => {
           const isMyMsg = msg.sender_id === currentUser.id;
@@ -366,7 +384,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
               <div className="bubble">
                 {showName && <span className="sender-name">{msg.sender?.username}</span>}
                 
-                {/* REPLY IN MESSAGE */}
+                {/* JAVOB XABARI (REPLY) */}
                 {repliedMsg && (
                   <div className="reply-preview-in-msg" onClick={() => document.getElementById(repliedMsg.id)?.scrollIntoView({ behavior: 'smooth' })}>
                     <div className="reply-line"></div>
@@ -379,7 +397,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
                   </div>
                 )}
 
-                {/* Media */}
+                {/* MEDIA (Rasm/Video) */}
                 {msg.file_url && (
                   <div className="media-container" onClick={() => !msg.status && setMediaZoom({ url: msg.file_url, type: msg.file_type })}>
                     {msg.status === 'uploading' && (
@@ -422,12 +440,13 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
       {/* FOOTER */}
       {canWrite ? (
         <div className="footer glass-footer">
+          {/* REPLY INDICATOR */}
           {(replyTo || editingMsg) && (
             <div className="reply-bar">
               <div className="reply-icon">{editingMsg ? <FaPen /> : <FaReply />}</div>
               <div className="reply-info">
                 <span>{editingMsg ? 'Xabarni tahrirlash' : `Javob: ${replyTo?.sender?.username}`}</span>
-                <p>{editingMsg ? editingMsg.content : (replyTo.content || 'Media fayl')}</p>
+                <p>{editingMsg ? editingMsg.content : (replyTo.content || (replyTo.file_type ? 'Media fayl' : '...'))}</p>
               </div>
               <button onClick={() => { setReplyTo(null); setEditingMsg(null); setNewMessage(''); }}><FaTimes /></button>
             </div>
@@ -435,15 +454,19 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
 
           <div className="input-bar">
             <button className="icon-btn" onClick={() => fileInputRef.current.click()}><FaPaperclip /></button>
+            {/* INPUT ACCEPT O'ZGARTIRILDI (VIDEO QO'SHILDI) */}
             <input 
-              type="file" multiple accept="image/*,video/*" 
+              type="file" multiple accept="image/*,video/mp4,video/webm,video/ogg" 
               ref={fileInputRef} style={{display: 'none'}} 
               onChange={(e) => {
-                const large = Array.from(e.target.files).find(f => f.size > 200*1024*1024);
+                const files = Array.from(e.target.files);
+                const large = files.find(f => f.size > 200*1024*1024);
                 if(large) return toast.error("200MB dan katta fayl mumkin emas!");
-                setSelectedFiles(Array.from(e.target.files));
-                setShowPreview(true);
-                e.target.value = null;
+                if(files.length > 0) {
+                   setSelectedFiles(files);
+                   setShowPreview(true);
+                   e.target.value = null; 
+                }
               }}
             />
             <input 
@@ -453,7 +476,9 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
               placeholder="Xabar yozing..." 
             />
             <button onClick={handleSend} className="send-btn" disabled={isSending}>
-              {isSending ? <div className="spinner" style={{width: 15, height: 15, borderWidth: 2}}></div> : <FaPaperPlane />}
+              {isSending ? (
+                  <span className="loader" style={{width: 20, height: 20, border: '2px solid #000'}}></span> 
+                ) : <FaPaperPlane />}
             </button>
           </div>
         </div>
@@ -491,28 +516,46 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         </div>
       )}
 
-      {/* PREVIEW MODAL */}
+      {/* YANGILANGAN PREVIEW MODAL */}
       {showPreview && (
         <div className="modal-overlay">
-          <div className="preview-container">
-            <div className="preview-header">
-              <h3>Fayllar ({selectedFiles.length})</h3>
+          <div className="preview-container-new">
+            <div className="preview-top-bar">
+              <span>Tanlanganlar ({selectedFiles.length})</span>
               <button onClick={() => {setShowPreview(false); setSelectedFiles([]);}}><FaTimes /></button>
             </div>
-            <div className="preview-grid">
-              {selectedFiles.map((f, i) => (
-                <div key={i} className="p-item">
-                  <button onClick={() => {
-                    const n = [...selectedFiles]; n.splice(i,1); 
-                    setSelectedFiles(n); if(n.length===0) setShowPreview(false);
-                  }}><FaTimes /></button>
-                  {f.type.startsWith('video') ? <video src={URL.createObjectURL(f)} /> : <img src={URL.createObjectURL(f)} />}
-                </div>
-              ))}
+            
+            <div className="preview-content-scroll">
+               <div className="preview-grid-new">
+                {selectedFiles.map((f, i) => (
+                  <div key={i} className="preview-card">
+                    <button className="remove-preview-btn" onClick={() => {
+                      const n = [...selectedFiles]; n.splice(i,1); 
+                      setSelectedFiles(n); if(n.length===0) setShowPreview(false);
+                    }}><FaTimes /></button>
+                    
+                    {f.type.startsWith('video') ? (
+                       <video src={URL.createObjectURL(f)} controls />
+                    ) : (
+                       <img src={URL.createObjectURL(f)} alt="preview" />
+                    )}
+                    <div className="preview-name">{f.name}</div>
+                  </div>
+                ))}
+               </div>
             </div>
-            <div className="preview-bot">
-              <input type="text" placeholder="Izoh..." value={newMessage} onChange={e => setNewMessage(e.target.value)} />
-              <button onClick={handleSend} disabled={isSending}>YUBORISH</button>
+
+            <div className="preview-footer">
+              <input 
+                type="text" 
+                placeholder="Izoh qo'shish..." 
+                value={newMessage} 
+                onChange={e => setNewMessage(e.target.value)} 
+                autoFocus
+              />
+              <button onClick={handleSend} disabled={isSending}>
+                 {isSending ? '...' : <FaPaperPlane />}
+              </button>
             </div>
           </div>
         </div>
@@ -572,13 +615,12 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
 
         /* REPLY IN MSG */
         .reply-preview-in-msg {
-          display: flex; gap: 8px; margin-bottom: 5px; cursor: pointer;
-          background: rgba(0,0,0,0.1); padding: 4px; border-radius: 4px;
+          display: flex; gap: 8px; margin-bottom: 8px; cursor: pointer;
+          background: rgba(0,0,0,0.2); padding: 5px 8px; border-radius: 6px; border-left: 3px solid #cfab56;
         }
-        .reply-line { width: 3px; background: #cfab56; border-radius: 2px; }
-        .reply-content-box { display: flex; flex-direction: column; overflow: hidden; }
-        .reply-sender-name { font-size: 11px; color: #cfab56; font-weight: bold; }
-        .reply-text-truncate { font-size: 11px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .reply-content-box { display: flex; flex-direction: column; overflow: hidden; justify-content: center; }
+        .reply-sender-name { font-size: 11px; color: #cfab56; font-weight: bold; margin-bottom: 2px; }
+        .reply-text-truncate { font-size: 12px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9; }
 
         /* MEDIA */
         .media-container { margin-bottom: 5px; border-radius: 8px; overflow: hidden; position: relative; max-width: 100%; width: fit-content; }
@@ -593,8 +635,8 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         /* FOOTER */
         .glass-footer { background: #17212b; border-top: 1px solid rgba(0,0,0,0.5); padding: 5px 10px; flex-shrink: 0; }
         .reply-bar { 
-          display: flex; align-items: center; gap: 10px; padding: 5px 10px; background: #0e1621; 
-          border-left: 3px solid #cfab56; margin-bottom: 5px; border-radius: 4px;
+          display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: #0e1621; 
+          border-left: 3px solid #cfab56; margin-bottom: 5px; border-radius: 6px;
         }
         .reply-info { flex: 1; overflow: hidden; }
         .reply-info span { color: #cfab56; font-size: 12px; font-weight: bold; }
@@ -613,7 +655,7 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         }
         .send-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 
-        /* CONTEXT MENU DESKTOP */
+        /* CONTEXT MENU */
         .context-menu { 
           position: fixed; background: #17212b; border-radius: 8px; 
           box-shadow: 0 5px 20px rgba(0,0,0,0.6); z-index: 9999; overflow: hidden; min-width: 180px;
@@ -642,18 +684,28 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         .delete-item { color: #ff595a; }
         .disabled { opacity: 0.5; pointer-events: none; }
 
-        /* PREVIEW MODAL */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; align-items: center; justify-content: center; }
-        .preview-container { background: #17212b; width: 95%; max-width: 450px; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 15px; }
-        .preview-header { display: flex; justify-content: space-between; color: #fff; }
-        .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 5px; max-height: 300px; overflow-y: auto; }
-        .p-item { position: relative; height: 80px; border-radius: 5px; overflow: hidden; }
-        .p-item img, .p-item video { width: 100%; height: 100%; object-fit: cover; }
-        .p-item button { position: absolute; top: 0; right: 0; background: rgba(0,0,0,0.5); color: #fff; border: none; }
+        /* --- PREVIEW MODAL NEW DESIGN --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .preview-container-new {
+           width: 90%; max-width: 500px; background: #17212b; border-radius: 16px; 
+           display: flex; flex-direction: column; overflow: hidden; border: 1px solid #333;
+           max-height: 80vh;
+        }
+        .preview-top-bar {
+           padding: 15px; background: #1e2a38; display: flex; justify-content: space-between; align-items: center; color: #fff; font-weight: bold; border-bottom: 1px solid #333;
+        }
+        .preview-top-bar button { background: none; border: none; color: #8899ac; font-size: 20px; cursor: pointer; }
         
-        .preview-bot { display: flex; gap: 10px; }
-        .preview-bot input { flex: 1; padding: 10px; background: #0e1621; border: none; color: #fff; border-radius: 8px; }
-        .preview-bot button { background: #cfab56; border: none; padding: 0 15px; font-weight: bold; border-radius: 8px; }
+        .preview-content-scroll { flex: 1; overflow-y: auto; padding: 15px; }
+        .preview-grid-new { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; }
+        .preview-card { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; background: #000; }
+        .preview-card img, .preview-card video { width: 100%; height: 100%; object-fit: cover; }
+        .preview-name { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); color: #fff; font-size: 10px; padding: 2px 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .remove-preview-btn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+        .preview-footer { padding: 10px; display: flex; gap: 10px; background: #1e2a38; border-top: 1px solid #333; }
+        .preview-footer input { flex: 1; background: #0e1621; border: none; color: #fff; padding: 12px; border-radius: 8px; outline: none; }
+        .preview-footer button { width: 50px; background: #cfab56; border: none; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #000; }
 
         /* LIGHTBOX */
         .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 3000; display: flex; align-items: center; justify-content: center; }
@@ -666,8 +718,43 @@ export default function ChatWindow({ chatId, currentUser, onBack, isMobile }) {
         .time { font-size: 10px; color: #8faec5; }
         .checks { font-size: 11px; color: #8faec5; }
         .read { color: #4aa3df; }
-        .spinner { border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .spinner-center { width: 100%; height: 50px; display: flex; justify-content: center; align-items: center; margin-top: 20px; }
+        
+        /* --- LOADER CSS --- */
+        .loader {
+          width: 48px;
+          height: 48px;
+          display: inline-block;
+          position: relative;
+        }
+        .loader::after,
+        .loader::before {
+          content: '';  
+          box-sizing: border-box;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: 2px solid #FFF;
+          position: absolute;
+          left: 0;
+          top: 0;
+          animation: animloader 2s linear infinite;
+        }
+        .loader::after {
+          animation-delay: 1s;
+        }
+
+        @keyframes animloader {
+          0% {
+            transform: scale(0);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 0;
+          }
+        }
       `}</style>
     </div>
   );

@@ -53,7 +53,7 @@ export default function ChatList() {
   const [creating, setCreating] = useState(false);
 
   // Context Menu & Long Press
-  const [contextMenu, setContextMenu] = useState(null); // { type: 'desktop'|'mobile', x, y, chat }
+  const [contextMenu, setContextMenu] = useState(null); 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const longPressTimer = useRef(null);
 
@@ -82,7 +82,6 @@ export default function ChatList() {
 
   const fetchMyChats = async (userId) => {
     setLoading(true);
-    // Realtime chat update uchun bu yerda subscribe qilish mumkin
     const { data, error } = await supabase
       .from('room_participants')
       .select(`room:rooms (id, name, type, created_at, image_url, description)`)
@@ -132,10 +131,7 @@ export default function ChatList() {
   };
 
   const handleChatSelect = async (chat) => {
-    // Agar User bo'lsa -> Private Room yaratish yoki borini ochish
     if (chat.type === 'user') {
-      // Mavjud private chatni tekshirish (Optimallashtirish kerak, hozir sodda versiya)
-      // Bu yerda backend logikasi murakkabroq bo'lishi mumkin, lekin sodda create qilamiz:
       const { data: existingRoom } = await supabase
           .from('rooms')
           .insert([{ type: 'private', name: chat.username }])
@@ -150,7 +146,6 @@ export default function ChatList() {
          fetchMyChats(user.id);
       }
     } else {
-      // Guruh yoki Kanalga qo'shilish
       const isMember = chats.some(c => c.id === chat.id);
       if (!isMember) {
         await supabase.from('room_participants').insert([{ room_id: chat.id, user_id: user.id }]);
@@ -218,7 +213,6 @@ export default function ChatList() {
   // --- RENDER ---
   if (!user) return null;
 
-  // 1. MOBILE CHAT VIEW (Full Screen)
   if (isMobileView && selectedChatId) {
     return (
       <div className="mobile-chat-wrapper">
@@ -230,7 +224,6 @@ export default function ChatList() {
     );
   }
 
-  // 2. MAIN LIST VIEW
   return (
     <div className="layout">
       <Head><title>Chat | MLBB</title></Head>
@@ -280,7 +273,12 @@ export default function ChatList() {
           {/* MY CHATS */}
           {!isSearching && (
             <div className="list-section">
-              {loading && <div className="spinner"></div>}
+              {/* --- LOADER --- */}
+              {loading && (
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <span className="loader"></span>
+                </div>
+              )}
               
               {chats.map((chat) => (
                 <div 
@@ -452,7 +450,7 @@ export default function ChatList() {
         .chat-item { 
           display: flex; align-items: center; padding: 12px 10px; border-radius: 12px; 
           cursor: pointer; transition: 0.2s; margin-bottom: 2px;
-          user-select: none; /* Prevent text selection on long press */
+          user-select: none;
         }
         .chat-item:active { background: rgba(255, 255, 255, 0.08); }
         .chat-item.active { background: rgba(207, 171, 86, 0.1); border-left: 2px solid #cfab56; }
@@ -552,8 +550,40 @@ export default function ChatList() {
         .cancel-btn { background: #334155; color: #fff; }
         .delete-btn { background: #ff595a; color: #fff; }
 
-        .spinner { width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #cfab56; border-radius: 50%; animation: spin 0.8s infinite linear; margin: 20px auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* --- NEW LOADER STYLES --- */
+        .loader {
+          width: 48px;
+          height: 48px;
+          display: inline-block;
+          position: relative;
+        }
+        .loader::after,
+        .loader::before {
+          content: '';  
+          box-sizing: border-box;
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          border: 2px solid #FFF;
+          position: absolute;
+          left: 0;
+          top: 0;
+          animation: animloader 2s linear infinite;
+        }
+        .loader::after {
+          animation-delay: 1s;
+        }
+
+        @keyframes animloader {
+          0% {
+            transform: scale(0);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(1);
+            opacity: 0;
+          }
+        }
       `}</style>
     </div>
   )
