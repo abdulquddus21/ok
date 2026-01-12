@@ -14,9 +14,9 @@ const HEROES_DATA = [
   { id: 4, name: 'Saber', role: 'Assassin', specialty: 'Hujum', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8W0qc26IgWxEHViCLsfDUJzWcOrA8DFpuyQ&s', desc: "Fazoviy qilich ustasi, dushman safiga yorib kirib, nishonni yo'q qiladi." },
   { id: 5, name: 'Alucard', role: 'Fighter', specialty: 'Jang', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_2Ru3qlIzhDC_qrHT1EnysMOXV_rTsP3Wlw&s', desc: "Demon ovchisi, zulmatga qarshi yolg'iz kurashuvchi jangchi." },
   { id: 6, name: 'Rafaela', role: 'Support', specialty: 'Yordam', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCLkovo_uFgOEFgfySLXCwseH1A8qAwBheSw&s', desc: "Osmondan tushgan farishta, ittifoqchilariga shifo va umid baxsh etadi." },
-  { id: 7, name: 'Gusion', role: 'Assassin', specialty: 'Tezlik', image: 'https://static.wikia.nocookie.net/mobile-legends/images/a/a2/Hero561-portrait.png/revision/latest/scale-to-width/360?cb=20241021142006', desc: "Paxion oilasining isyonkor o'g'li, xanjar va sehrni mukammal uyg'unlashtiradi." },
+  { id: 7, name: 'Gusion', role: 'Assassin', specialty: 'Tezlik', image: 'https://liquipedia.net/commons/images/4/46/Gusion_infobox.jpg', desc: "Paxion oilasining isyonkor o'g'li, xanjar va sehrni mukammal uyg'unlashtiradi." },
   { id: 8, name: 'Franco', role: 'Tank', specialty: 'Tortish', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmmGqIlZDK-GU1YfLsHbzzLH-h3ut2cU_Jnw&s', desc: "Muzli dengizlar qaroqchisi, uning temir changagidan qochib bo'lmaydi." },
-  { id: 9, name: 'Miya', role: 'Marksman', specialty: 'Yashirinish', image: '', desc: "Oy ibodatxonasining ruhoniysi." },
+  { id: 9, name: 'Miya', role: 'Marksman', specialty: 'Yashirinish', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNqwVGC2WCQFmLeZi3gzUGj-Tvfk2ylqC7eA&s', desc: "Oy ibodatxonasining ruhoniysi." },
 ];
 
 const ROLES = [
