@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { FaHome, FaNewspaper, FaComments, FaUserAstronaut } from 'react-icons/fa';
+import { FaHome, FaNewspaper, FaComments, FaUserAstronaut, FaMask } from 'react-icons/fa';
 
 export default function Navbar({ user }) {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function Navbar({ user }) {
   const navItems = [
     { name: 'Asosiy', path: '/', icon: <FaHome /> },
     { name: 'Yangilik', path: '/news', icon: <FaNewspaper /> },
+    { name: 'Qahramon', path: '/hero', icon: <FaMask /> }, // <-- YANGI QO'SHILDI
     { name: 'Chat', path: '/chat', icon: <FaComments /> },
     { name: 'Profil', path: `/profile/${user.username}`, icon: <FaUserAstronaut /> },
   ];
@@ -100,7 +101,7 @@ export default function Navbar({ user }) {
           }
           
           .nav-container {
-            width: 400px;
+            width: 500px; /* Elementlar ko'paygani uchun sal kengaytirildi */
             height: 65px;
             border-radius: 35px;
             border: 1px solid rgba(207, 171, 86, 0.3);
