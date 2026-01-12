@@ -8,14 +8,14 @@ import {
 
 // --- MOCK DATA ---
 const HEROES_DATA = [
-  { id: 1, name: 'Tigreal', role: 'Tank', specialty: 'Nazorat', image: 'https://img.mobilelegends.com/group1/M00/00/32/Cq2Ixl5sW5uAcoM4AAI9K4rV4B0388.jpg', desc: "Moniyan imperiyasining sodiq himoyachisi, yorug'lik ritsarlari sardori." },
-  { id: 2, name: 'Layla', role: 'Marksman', specialty: 'Portlash', image: 'https://img.mobilelegends.com/group1/M00/00/30/Cq2Ixl5sWyCAfM_GAAHwX3pxXWc819.jpg', desc: "Malefic Gun energiyasi bilan dushmanlarni uzoq masofadan yo'q qiladi." },
-  { id: 3, name: 'Eudora', role: 'Mage', specialty: 'Sehrli', image: 'https://img.mobilelegends.com/group1/M00/00/31/Cq2Ixl5sW12AV4oFAAH0d4yZt1M277.jpg', desc: "Chaqmoqlar malikasi, uning g'azabidan hech kim qochib qutula olmaydi." },
-  { id: 4, name: 'Saber', role: 'Assassin', specialty: 'Hujum', image: 'https://img.mobilelegends.com/group1/M00/00/2F/Cq2Ixl5sWwuAb7X3AAH1i4z0z0w112.jpg', desc: "Fazoviy qilich ustasi, dushman safiga yorib kirib, nishonni yo'q qiladi." },
-  { id: 5, name: 'Alucard', role: 'Fighter', specialty: 'Jang', image: 'https://img.mobilelegends.com/group1/M00/00/30/Cq2Ixl5sWxeAQt8LAAH6l4z8z8w112.jpg', desc: "Demon ovchisi, zulmatga qarshi yolg'iz kurashuvchi jangchi." },
-  { id: 6, name: 'Rafaela', role: 'Support', specialty: 'Yordam', image: 'https://img.mobilelegends.com/group1/M00/00/32/Cq2Ixl5sW4KAUxjLAAH6l4z8z8w112.jpg', desc: "Osmondan tushgan farishta, ittifoqchilariga shifo va umid baxsh etadi." },
-  { id: 7, name: 'Gusion', role: 'Assassin', specialty: 'Tezlik', image: 'https://img.mobilelegends.com/group1/M00/00/59/Cq2Ixl5sZ_6AQz4LAAH6l4z8z8w112.jpg', desc: "Paxion oilasining isyonkor o'g'li, xanjar va sehrni mukammal uyg'unlashtiradi." },
-  { id: 8, name: 'Franco', role: 'Tank', specialty: 'Tortish', image: 'https://img.mobilelegends.com/group1/M00/00/31/Cq2Ixl5sW2uAQz4LAAH6l4z8z8w112.jpg', desc: "Muzli dengizlar qaroqchisi, uning temir changagidan qochib bo'lmaydi." },
+  { id: 1, name: 'Tigreal', role: 'Tank', specialty: 'Nazorat', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzYBcyae8VLwkJ8ttWId9N1T1tOXkD5eNjLH5URUUhJD1GyqnokU7f29kSZAsdb6PjhOCAesXYwNngwjX_v2rwyePG7nwSslfghzFDQt8&s=10', desc: "Moniyan imperiyasining sodiq himoyachisi, yorug'lik ritsarlari sardori." },
+  { id: 2, name: 'Layla', role: 'Marksman', specialty: 'Portlash', image: 'https://preview.redd.it/layla-is-spoiling-the-less-skilled-players-v0-03e013tiplhe1.jpeg?width=1080&crop=smart&auto=webp&s=14bf27aefb271f1ef79fd82b5974791636615d25', desc: "Malefic Gun energiyasi bilan dushmanlarni uzoq masofadan yo'q qiladi." },
+  { id: 3, name: 'Eudora', role: 'Mage', specialty: 'Sehrli', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTFbS8pSuxTiwK2EzfT2b2Fwxv8xx1M_EJK7w&s', desc: "Chaqmoqlar malikasi, uning g'azabidan hech kim qochib qutula olmaydi." },
+  { id: 4, name: 'Saber', role: 'Assassin', specialty: 'Hujum', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8W0qc26IgWxEHViCLsfDUJzWcOrA8DFpuyQ&s', desc: "Fazoviy qilich ustasi, dushman safiga yorib kirib, nishonni yo'q qiladi." },
+  { id: 5, name: 'Alucard', role: 'Fighter', specialty: 'Jang', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR_2Ru3qlIzhDC_qrHT1EnysMOXV_rTsP3Wlw&s', desc: "Demon ovchisi, zulmatga qarshi yolg'iz kurashuvchi jangchi." },
+  { id: 6, name: 'Rafaela', role: 'Support', specialty: 'Yordam', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCLkovo_uFgOEFgfySLXCwseH1A8qAwBheSw&s', desc: "Osmondan tushgan farishta, ittifoqchilariga shifo va umid baxsh etadi." },
+  { id: 7, name: 'Gusion', role: 'Assassin', specialty: 'Tezlik', image: 'https://static.wikia.nocookie.net/mobile-legends/images/a/a2/Hero561-portrait.png/revision/latest/scale-to-width/360?cb=20241021142006', desc: "Paxion oilasining isyonkor o'g'li, xanjar va sehrni mukammal uyg'unlashtiradi." },
+  { id: 8, name: 'Franco', role: 'Tank', specialty: 'Tortish', image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSmmGqIlZDK-GU1YfLsHbzzLH-h3ut2cU_Jnw&s', desc: "Muzli dengizlar qaroqchisi, uning temir changagidan qochib bo'lmaydi." },
   { id: 9, name: 'Miya', role: 'Marksman', specialty: 'Yashirinish', image: '', desc: "Oy ibodatxonasining ruhoniysi." },
 ];
 
