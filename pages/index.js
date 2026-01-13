@@ -131,9 +131,6 @@ export default function Home() {
               <button onClick={() => router.push('/chat')} className="btn btn-primary">
                 <span className="icon">💬</span> Umumiy Chat
               </button>
-              <button onClick={logout} className="btn btn-danger">
-                Chiqish
-              </button>
             </div>
           </div>
         ) : (
@@ -528,7 +525,7 @@ export default function Home() {
 
           .card {
             padding: 25px 20px;
-            width: 95%; /* Ekranning 95% ini egallaydi */
+            width: 100%; /* Ekranning 95% ini egallaydi */
             margin: 0 auto;
           }
 
