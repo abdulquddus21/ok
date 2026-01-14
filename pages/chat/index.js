@@ -12,6 +12,9 @@ import ChatWindow from '../../components/ChatWindow'
 // --- IMAGE COMPONENT WITH BLUR EFFECT ---
 const AvatarImage = ({ src, alt, className }) => {
   const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  if (!src || error) return null;
 
   return (
     <div className={`img-wrapper ${className}`}>
@@ -20,10 +23,11 @@ const AvatarImage = ({ src, alt, className }) => {
         alt={alt} 
         className={`smooth-img ${loaded ? 'loaded' : 'loading'}`}
         onLoad={() => setLoaded(true)}
+        onError={() => setError(true)}
       />
       <style jsx>{`
         .img-wrapper {
-          width: 100%; height: 100%; position: relative; overflow: hidden; background: #2d3b55;
+          width: 100%; height: 100%; position: relative; overflow: hidden; background: #2d3b55; display: flex; align-items: center; justify-content: center;
         }
         .smooth-img {
           width: 100%; height: 100%; object-fit: cover;
@@ -38,22 +42,25 @@ const AvatarImage = ({ src, alt, className }) => {
   );
 };
 
-// --- CATBOX UPLOAD ---
-const uploadToCatbox = (file) => {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    const formData = new FormData();
-    formData.append('reqtype', 'fileupload');
-    formData.append('userhash', '2f5d304c9d3a6788a634c9250'); 
-    formData.append('fileToUpload', file);
-    xhr.onload = () => {
-      if (xhr.status === 200) resolve(xhr.responseText);
-      else reject('Upload failed');
-    };
-    xhr.onerror = () => reject('Network Error');
-    xhr.open('POST', '/api/catbox', true);
-    xhr.send(formData);
-  });
+// --- LOCAL UPLOAD FUNCTION (O'ZGARDI) ---
+const uploadToLocal = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    
+    if (!res.ok) throw new Error('Yuklashda xatolik');
+    
+    const data = await res.json();
+    return data.url; // Masalan: /uploads/image/rasm.jpg
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
 };
 
 export default function ChatList() {
@@ -118,20 +125,41 @@ export default function ChatList() {
     };
   }, []);
 
+  // --- FETCH LOGIC ---
   const fetchMyChats = async (userId) => {
     setLoading(true);
-    const { data, error } = await supabase
+    
+    const { data: myRoomsData, error } = await supabase
       .from('room_participants')
       .select(`room:rooms (id, name, type, created_at, image_url, description)`)
       .eq('user_id', userId)
       .order('joined_at', { ascending: false });
 
-    if (data && data.length > 0) {
-      const formatted = data.map(item => ({
-        ...item.room,
-        time: new Date(item.room.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    if (myRoomsData && myRoomsData.length > 0) {
+      const chatsFormatted = await Promise.all(myRoomsData.map(async (item) => {
+        let room = { ...item.room };
+        
+        if (room.type === 'private') {
+           const { data: partnerData } = await supabase
+             .from('room_participants')
+             .select('users (username, avatar_url)')
+             .eq('room_id', room.id)
+             .neq('user_id', userId)
+             .maybeSingle();
+           
+           if (partnerData && partnerData.users) {
+             room.name = partnerData.users.username; 
+             room.image_url = partnerData.users.avatar_url; 
+           }
+        }
+
+        return {
+          ...room,
+          time: new Date(room.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+        };
       }));
-      setChats(formatted);
+
+      setChats(chatsFormatted);
     } else {
       setChats([]);
       fetchSuggestions(userId);
@@ -172,14 +200,12 @@ export default function ChatList() {
   };
 
   const saveToHistory = (item) => {
-    // Historyda bormi yo'qmi tekshirish (takrorlanmasligi uchun)
     const exists = searchHistory.find(h => h.id === item.id);
     let newHistory = searchHistory;
     
     if (!exists) {
-      newHistory = [item, ...searchHistory].slice(0, 5); // Faqat oxirgi 5 tasini saqlash
+      newHistory = [item, ...searchHistory].slice(0, 5); 
     } else {
-      // Agar bo'lsa uni tepaga chiqarish
       newHistory = [item, ...searchHistory.filter(h => h.id !== item.id)];
     }
     
@@ -193,23 +219,22 @@ export default function ChatList() {
   }
 
   const handleChatSelect = async (chat) => {
-    // Qidiruvdan bosilgan bo'lsa tarixga saqlash
     if (isSearching) {
       saveToHistory(chat);
     }
 
     if (chat.type === 'user') {
-      const { data: existingRoom } = await supabase
+      const { data: newRoom } = await supabase
           .from('rooms')
-          .insert([{ type: 'private', name: chat.username }])
+          .insert([{ type: 'private', name: chat.username }]) 
           .select().single();
       
-      if (existingRoom) {
+      if (newRoom) {
          await supabase.from('room_participants').insert([
-           { room_id: existingRoom.id, user_id: user.id },
-           { room_id: existingRoom.id, user_id: chat.id }
+           { room_id: newRoom.id, user_id: user.id },
+           { room_id: newRoom.id, user_id: chat.id }
          ]);
-         setSelectedChatId(existingRoom.id);
+         setSelectedChatId(newRoom.id);
          fetchMyChats(user.id);
       }
     } else {
@@ -224,20 +249,30 @@ export default function ChatList() {
     setSearchQuery('');
   };
 
+  // --- CREATE ITEM (Rasmni localga yuklash) ---
   const createItem = async () => {
     if (!createName.trim()) return;
     setCreating(true);
 
     let imageUrl = null;
     if (createAvatar) {
-      try { imageUrl = await uploadToCatbox(createAvatar); } catch (err) { console.error(err); }
+      try { 
+        // BU YERDA LOCAL UPLOAD ISHLATILDI
+        imageUrl = await uploadToLocal(createAvatar); 
+      } catch (err) { 
+        console.error("Rasm yuklashda xato:", err); 
+        // Xato bo'lsa ham guruh ochilaveradi, rasmsiz
+      }
     }
 
     const { data: room } = await supabase
       .from('rooms')
       .insert([{ 
-        name: createName, type: createType, owner_id: user.id,
-        description: createBio, image_url: imageUrl
+        name: createName, 
+        type: createType, 
+        owner_id: user.id,
+        description: createBio, 
+        image_url: imageUrl 
       }])
       .select().single();
 
@@ -259,7 +294,7 @@ export default function ChatList() {
     fetchMyChats(user.id);
   };
 
-  // --- TOUCH HANDLERS (Mobile Long Press) ---
+  // --- TOUCH HANDLERS ---
   const handleTouchStart = (e, chat) => {
     if (!isMobileView) return;
     longPressTimer.current = setTimeout(() => {
@@ -358,6 +393,7 @@ export default function ChatList() {
               {searchResults.map((item) => (
                 <div key={item.id} className="chat-item" onClick={() => handleChatSelect(item)}>
                   <div className="avatar global">
+                     {/* User avatari yoki Guruh rasmi */}
                      {item.image_url || item.avatar_url ? (
                         <AvatarImage src={item.image_url || item.avatar_url} alt="ava" />
                      ) : (item.name?.[0])}
@@ -391,8 +427,9 @@ export default function ChatList() {
                   onTouchEnd={handleTouchEnd}
                 >
                   <div className={`avatar ${chat.type}`}>
+                    {/* AVATAR LOGIKASI */}
                     {chat.image_url ? (
-                      <AvatarImage src={chat.image_url} alt="ava" />
+                      <AvatarImage src={chat.image_url} alt={chat.name} />
                     ) : (
                       chat.type === 'channel' ? <FaBullhorn /> : (chat.type === 'group' ? <FaUserFriends /> : <FaUserAstronaut />)
                     )}
@@ -482,14 +519,14 @@ export default function ChatList() {
         </div>
       )}
 
-      {/* DESKTOP CONTEXT MENU (Block removed) */}
+      {/* DESKTOP CONTEXT MENU */}
       {contextMenu?.type === 'desktop' && (
         <div className="context-menu desktop" style={{ top: contextMenu.y, left: contextMenu.x }} onClick={(e) => e.stopPropagation()}>
           <div className="menu-item delete" onClick={() => { setShowDeleteConfirm(contextMenu.chat); setContextMenu(null); }}><FaTrash /> O'chirish</div>
         </div>
       )}
 
-      {/* MOBILE BOTTOM SHEET MENU (Block removed) */}
+      {/* MOBILE BOTTOM SHEET MENU */}
       {contextMenu?.type === 'mobile' && (
         <div className="mobile-sheet-overlay" onClick={() => setContextMenu(null)}>
           <div className="mobile-sheet" onClick={(e) => e.stopPropagation()}>
