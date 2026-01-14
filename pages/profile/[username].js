@@ -203,6 +203,7 @@ export default function Profile() {
   const logout = () => { /* ... same as before ... */ };
 
   const isMyProfile = currentUser && profileData && currentUser.id === profileData.id;
+  const isAdmin = profileData && profileData.role === 'admin';
 
   return (
     <div className="container">
@@ -261,9 +262,16 @@ export default function Profile() {
                 </div>
 
                 {isMyProfile ? (
-                  <button className="btn-action primary" onClick={() => setShowPostModal(true)}>
-                    <FaPlus /> Post Yuklash
-                  </button>
+                  <div className="action-buttons">
+                    <button className="btn-action primary" onClick={() => setShowPostModal(true)}>
+                      <FaPlus /> Post Yuklash
+                    </button>
+                    {isAdmin && (
+                      <button className="btn-action admin" onClick={() => router.push('/admin')}>
+                        <FaShieldAlt /> Admin Panel
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <button className="btn-action secondary" onClick={() => toast.info('Xabar yozish tez kunda!')}>
                      Xabar Yozish
@@ -355,7 +363,7 @@ export default function Profile() {
         </div>
       )}
 
-      {/* --- MODAL: EDIT PROFILE (Oldingi kabi) --- */}
+      {/* --- MODAL: EDIT PROFILE --- */}
       {showEditModal && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowEditModal(false)}>
           <div className="modal animate-pop">
@@ -385,7 +393,7 @@ export default function Profile() {
         </div>
       )}
 
-      {/* --- MODAL: SETTINGS (Oldingi kabi) --- */}
+      {/* --- MODAL: SETTINGS --- */}
       {showSettingsModal && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowSettingsModal(false)}>
            <div className="modal animate-pop">
@@ -443,9 +451,12 @@ export default function Profile() {
         .stat-item b { font-size: 18px; color: #fff; }
         .stat-item span { font-size: 11px; color: #8899ac; }
 
-        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-transform: uppercase; }
+        .action-buttons { display: flex; flex-direction: column; gap: 10px; }
+        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-transform: uppercase; transition: all 0.3s; }
         .primary { background: linear-gradient(135deg, #cfab56 0%, #b08d3e 100%); color: #000; }
+        .admin { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #fff; }
         .secondary { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
 
         /* POSTS GRID */
         .posts-section { margin-top: 10px; }
@@ -481,7 +492,7 @@ export default function Profile() {
         .delete-post-btn { background: none; border: none; color: #ff4d4f; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         .close-absolute { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; z-index: 10; }
 
-        .image-preview-box { width: 100px; height: 100px; margin: 0 auto; border-radius: 50%; overflow: hidden; position: relative; border: 2px dashed #444; }
+        .image-preview-box { width: 100px; height: 100px; margin: 0 auto; border-radius: 50%; overflow: hidden; position: relative; border: 2px dashed #444; cursor: pointer; }
         .image-preview-box img { width: 100%; height: 100%; object-fit: cover; }
         .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; transition: 0.2s; }
         .image-preview-box:hover .overlay { opacity: 1; }
